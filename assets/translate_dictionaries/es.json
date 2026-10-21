@@ -1,4 +1,14 @@
 {
+  "retry": "Reintentar",
+  "errorLoadingWidgetAnErrorOccurred": "Ocurrió un error",
+  "noResultsWidgetTitle": "Sin resultados",
+  "noResultsWidgetDescription": "No encontramos información para mostrar",
+  "noResultsWidgetButton": "Reintentar",
   "splashPageTitle": "Portal Remoto",
-  "versionAndBuild": "Versión {version} ({build})"
+  "versionAndBuild": "Versión {version} ({build})",
+  "unauthorized": "No autorizado",
+  "unknownError": "Ocurrió un error inesperado",
+  "noInternet": "Sin conexión a internet",
+  "timeout": "La solicitud tardó demasiado",
+  "noUserFound": "No se encontró el usuario"
 }
