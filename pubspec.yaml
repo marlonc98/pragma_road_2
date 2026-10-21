@@ -50,6 +50,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_flavorizr: ^2.6.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -96,3 +97,41 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
+flavorizr:
+  instructions:
+    - assets:download
+    - assets:extract
+    - android:androidManifest
+    - android:flavorizrGradle
+    - android:buildGradle
+    - flutter:flavors
+    - ios:podfile
+    - ios:xcconfig
+    - ios:buildTargets
+    - ios:schema
+    - ios:plist
+    - ios:launchScreen
+    - assets:clean
+    - ide:config
+  flavors:
+    mock:
+      app:
+        name: "[MOCK] Portal Remoto"
+      android:
+        applicationId: "com.example.portal_remoto.mock"
+      ios:
+        bundleId: "com.example.portalRemoto.mock"
+    dev:
+      app:
+        name: "[DEV] Portal Remoto"
+      android:
+        applicationId: "com.example.portal_remoto.dev"
+      ios:
+        bundleId: "com.example.portalRemoto.dev"
+    prod:
+      app:
+        name: "Portal Remoto"
+      android:
+        applicationId: "com.example.portal_remoto"
+      ios:
+        bundleId: "com.example.portalRemoto"

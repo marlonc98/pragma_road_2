@@ -1,0 +1,6 @@
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
+#include "Generated.xcconfig"
+
+ASSET_PREFIX=mock
+BUNDLE_NAME=[MOCK] Portal Remoto
+BUNDLE_DISPLAY_NAME=[MOCK] Portal Remoto

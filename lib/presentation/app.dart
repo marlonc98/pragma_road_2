@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:portal_remoto/flavors/flavors.dart';
 import 'package:portal_remoto/presentation/router.dart';
 
 class App extends StatelessWidget {
@@ -6,6 +7,6 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(title: "Portal Remoto", routerConfig: router);
+    return MaterialApp.router(title: F.title, routerConfig: router);
   }
 }
