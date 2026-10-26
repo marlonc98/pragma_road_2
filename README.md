@@ -1,11 +1,12 @@
 # Portal Remoto
 
-App Flutter de **portal remoto**. Por ahora el proyecto tiene la base de arquitectura lista (splash, localización, widgets de carga y flavors) y todavía no tiene funcionalidades de negocio.
+App Flutter para **buscar personajes de Rick and Morty** y ver su detalle, usando la API pública [rickandmortyapi.com](https://rickandmortyapi.com/documentation).
 
 ## ¿Qué hace?
 
-- **Splash**: carga las traducciones y la versión de la app, y luego navega a la pantalla principal.
-- **Pantalla principal**: hoy es un `PlaceholderPage`, que se reemplazará por la primera funcionalidad.
+- **Splash**: carga las traducciones y la versión de la app, y luego navega al listado.
+- **Personajes**: lista con scroll infinito (20 por página), búsqueda por nombre con *debounce*, *pull to refresh* y estados de carga, error y sin resultados.
+- **Detalle**: imagen, estado, género, número de episodios, especie, tipo, origen y última ubicación conocida.
 
 Proyecto construido con **Clean Architecture** (domain / data / presentation), MVVM en la capa de presentación, **Riverpod** para estado global e inyección de dependencias, **go_router** para la navegación y **flavors** (`mock`, `dev` y `prod`).
 
@@ -57,9 +58,9 @@ No se necesita ningún API key ni archivo `.env`.
 
 | Flavor | Nombre de la app | Notas |
 |---|---|---|
-| `mock` | [MOCK] Portal Remoto | Pensado para repositorios en memoria con datos de ejemplo. |
-| `dev` | [DEV] Portal Remoto | Ambiente de desarrollo. |
-| `prod` | Portal Remoto | Ambiente de producción. |
+| `mock` | [MOCK] Portal Remoto | Personajes en memoria (`CharacterRepositoryMock`), sin llamar a la API. |
+| `dev` | [DEV] Portal Remoto | API real. |
+| `prod` | Portal Remoto | API real. |
 
 Cada flavor tiene su propio `applicationId` / `bundleId` (`.mock`, `.dev`), así que los tres se pueden instalar a la vez. Si se corre sin `--flavor`, la app usa `prod`. El repositorio de cada flavor se elige en [dependency_injection.dart](lib/dependency_injection.dart) con un `switch (F.appFlavor)`.
 
@@ -89,17 +90,17 @@ flowchart TB
 
     subgraph Domain["domain — no depende de ninguna otra capa"]
         direction TB
-        UseCase["UseCases<br/>Load"]
-        RepoI["LocalizationRepository<br/>(interfaces abstractas)"]
-        Entities["Entities<br/>PetitionStatusEntity&lt;T&gt;, SearchResultEntity&lt;T&gt;"]
+        UseCase["UseCases<br/>Load, SearchCharacters, GetCharacterById"]
+        RepoI["LocalizationRepository, CharacterRepository<br/>(interfaces abstractas)"]
+        Entities["Entities<br/>CharacterEntity, PetitionStatusEntity&lt;T&gt;, SearchResultEntity&lt;T&gt;"]
         UseCase --> RepoI
         UseCase -.->|usa| Entities
     end
 
     subgraph Data["data"]
         direction TB
-        RepoImpl["LocalizationRepositoryImpl"]
-        Sources["shared_preferences<br/>assets/translate_dictionaries/*.json"]
+        RepoImpl["LocalizationRepositoryImpl<br/>CharacterRepositoryImpl / Mock"]
+        Sources["rickandmortyapi.com (http)<br/>shared_preferences<br/>assets/translate_dictionaries/*.json"]
         RepoImpl --> Sources
     end
 
@@ -113,24 +114,28 @@ flowchart TB
 ```
 lib/
 ├── domain/              # Reglas de negocio puras, sin Flutter ni detalles de almacenamiento
-│   ├── entities/         # PetitionStatusEntity<T>, SearchResultEntity<T>
-│   ├── repositories/     # Contratos abstractos (LocalizationRepository)
-│   ├── use_cases/        # Una operación de negocio por clase (load_use_case.dart)
+│   ├── entities/         # CharacterEntity, PetitionStatusEntity<T>, SearchResultEntity<T>
+│   ├── repositories/     # Contratos abstractos (LocalizationRepository, CharacterRepository)
+│   ├── use_cases/        # Una operación de negocio por clase (load, character/search, character/get_by_id)
 │   ├── states/           # Contrato de estado global (LocalizationState)
 │   └── constants/        # Claves de error compartidas (ErrorsConstants)
 │
 ├── data/                # Implementaciones concretas de los contratos de domain
+│   ├── settings/         # RestApi (cliente http + manejo de errores) y RickAndMortyApi
+│   ├── dtos/             # CharacterDto: JSON de la API -> CharacterEntity
 │   └── repositories/
+│       ├── character/     # CharacterRepositoryImpl (API), CharacterRepositoryMock + api/
 │       └── localization/  # LocalizationRepositoryImpl + api/
 │
 ├── presentation/        # UI + estado de UI
 │   ├── pages/            # Cada pantalla: Page + Screen + ViewModel (+ widgets/ propios)
-│   │   ├── splash/        # Carga traducciones y versión, luego va a la pantalla principal
-│   │   └── placeholder/   # Pantalla temporal hasta tener la primera funcionalidad
-│   ├── widgets/          # Reutilizables: buttons/, images/ y loaders_status/ (carga, error, sin resultados)
+│   │   ├── splash/            # Carga traducciones y versión, luego va al listado
+│   │   ├── characters/        # Listado paginado con búsqueda (+ widgets/character_card_widget.dart)
+│   │   └── character_detail/  # Detalle de un personaje por id
+│   ├── widgets/          # Reutilizables: buttons/, images/, inputs/, lists/ y loaders_status/
 │   ├── states/           # Implementación Riverpod de LocalizationState
-│   ├── utils/            # ViewModel base + StfViewModelAdapter
-│   ├── theme/            # Tema de la app (pendiente)
+│   ├── utils/            # ViewModel base, StfViewModelAdapter y textos/colores de estado y género
+│   ├── theme/            # AppTheme (claro y oscuro)
 │   ├── constants/        # TextConstants (claves de traducción)
 │   ├── router.dart       # Rutas con go_router
 │   └── app.dart          # MaterialApp.router
@@ -146,12 +151,12 @@ test/                           # Tests
 ### Capas
 
 - **domain**: define *qué* hace la app. Los casos de uso aplican las reglas de negocio sin saber de dónde vienen los datos.
-- **data**: define *cómo* se obtienen y guardan los datos. Cambiar la fuente (local, API, mock) solo requiere otra implementación del repositorio y cambiar su Provider.
+- **data**: define *cómo* se obtienen y guardan los datos. Las funciones de `api/` hacen la petición y lanzan claves de `ErrorsConstants`; el repositorio las envuelve en `PetitionStatusEntity`. Cambiar la fuente (API, mock) solo requiere otra implementación del repositorio y cambiar su Provider.
 - **presentation**: dibuja la UI y reacciona a los cambios. Los `ViewModel` llaman casos de uso a través de los Providers, nunca a los repositorios directamente.
 
 ### Inyección de dependencias con Riverpod
 
-[dependency_injection.dart](lib/dependency_injection.dart) declara todos los `Provider`/`NotifierProvider`, agrupados en repositorios, estados y casos de uso. Cuando un repositorio tenga versión mock, su Provider elige la implementación según el flavor.
+[dependency_injection.dart](lib/dependency_injection.dart) declara todos los `Provider`/`NotifierProvider`, agrupados en repositorios, estados y casos de uso. `characterRepositoryProvider` elige la implementación según el flavor: `CharacterRepositoryMock` en `mock` y `CharacterRepositoryImpl` (API real) en `dev` y `prod`.
 
 ### Patrón de cada pantalla (Page / Screen / ViewModel)
 
@@ -174,6 +179,14 @@ Los repositorios devuelven [PetitionStatusEntity<T>](lib/domain/entities/petitio
 
 `fullSize` controla cómo se centra el estado (`inContainer`, `inExpanded` o `notFullSize`).
 
+### Tests
+
+```bash
+flutter test
+```
+
+Cubren el `CharacterDto`, el `CharacterRepositoryImpl` contra un `MockClient` de `http` (parámetros enviados, 404 como lista vacía o `characterNotFound`, errores de red) y los casos de uso sobre el repositorio mock.
+
 ### Imágenes
 
 [ImageNetworkWithLoadWidget](lib/presentation/widgets/images/image_network_with_load_widget.dart) carga una imagen desde una URL (`http`/`https`), un asset (`assets/`) o un archivo local. Muestra un indicador mientras carga y, si falla, una imagen por defecto (`defaultImage`) o un placeholder; con `notShowDefaultImage: true` no muestra nada.
@@ -189,7 +202,9 @@ Los textos visibles usan claves de [TextConstants](lib/presentation/constants/te
 | Paquete | Para qué se usa | Por qué está |
 |---|---|---|
 | `flutter_riverpod` / `riverpod` | Estado global e inyección de dependencias | Es el mecanismo central de la arquitectura: repositorios, estados y casos de uso se declaran como Providers. |
-| `go_router` | Navegación | Rutas declarativas (`context.go` / `context.push`). |
+| `go_router` | Navegación | Rutas declarativas (`context.go` / `context.push`); el detalle usa la ruta `/characters/:id`. |
+| `http` | Peticiones a la API | Cliente simple; se inyecta en `RestApi` para poder usar `MockClient` en los tests. |
+| `infinite_scroll_pagination` | Scroll infinito del listado | `PagingController` + `PagedListView` piden la siguiente página hasta llegar a `info.pages`. |
 | `shared_preferences` | Persistencia local de clave-valor | La usa la localización para el idioma guardado. |
 | `package_info_plus` | Leer la versión y el número de build | Se muestran en el splash (`Versión {version} ({build})`). |
 | `flutter_flavorizr` (dev) | Generar los flavors `mock`, `dev` y `prod` | Configura Android e iOS (ids, nombres, esquemas de Xcode) desde `pubspec.yaml`. Está configurado para no tocar `main.dart`, `app.dart` ni los íconos. |
@@ -204,6 +219,6 @@ El [.gitignore](.gitignore) excluye todo lo que es local a la máquina o sensibl
 
 ## Limitaciones conocidas / próximos pasos
 
-- La app está solo en español (`es`).
-- La pantalla principal todavía es un `PlaceholderPage`.
-- El tema de la app (`presentation/theme/`) aún no está definido.
+- La app está solo en español (`es`); los valores que vienen de la API (especie, tipo, lugares) se muestran tal cual, en inglés.
+- La búsqueda es solo por nombre; la API también permite filtrar por estado, especie y género.
+- No hay caché: cada vez que se abre un detalle se vuelve a pedir el personaje.
