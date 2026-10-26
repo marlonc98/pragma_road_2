@@ -6,15 +6,14 @@ import 'package:portal_remoto/domain/constants/errors_constants.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
 import 'package:portal_remoto/domain/entities/search_result_entity.dart';
 
-Future<SearchResultEntity<CharacterEntity>> searchCharactersApiImpl(
-  RickAndMortyApi api, {
+Future<SearchResultEntity<CharacterEntity>> searchCharactersApiImpl({
   required int page,
   required int itemsPerPage,
   String? query,
 }) async {
   final String responseText;
   try {
-    responseText = await api.get(
+    responseText = await RickAndMortyApi().get(
       '/character',
       query: {
         'page': '$page',

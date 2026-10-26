@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:portal_remoto/data/repositories/character/character_repository_impl.dart';
-import 'package:portal_remoto/data/settings/rick_and_morty_api.dart';
 import 'package:portal_remoto/domain/constants/errors_constants.dart';
 
 Map<String, dynamic> characterJson(int id, String name) => {
@@ -17,14 +16,17 @@ Map<String, dynamic> characterJson(int id, String name) => {
   'episode': [],
 };
 
-CharacterRepositoryImpl repositoryWith(
+Future<T> withServer<T>(
   Future<http.Response> Function(http.Request request) handler,
-) => CharacterRepositoryImpl(api: RickAndMortyApi(client: MockClient(handler)));
+  Future<T> Function() call,
+) => http.runWithClient(call, () => MockClient(handler));
 
 void main() {
+  final repository = CharacterRepositoryImpl();
+
   test('busca por nombre y página y arma el SearchResultEntity', () async {
     late Uri requested;
-    final repository = repositoryWith((request) async {
+    final response = await withServer((request) async {
       requested = request.url;
       return http.Response(
         jsonEncode({
@@ -33,9 +35,7 @@ void main() {
         }),
         200,
       );
-    });
-
-    final response = await repository.searchCharacters(page: 2, query: 'rick');
+    }, () => repository.searchCharacters(page: 2, query: 'rick'));
 
     expect(requested.path, '/api/character');
     expect(requested.queryParameters, {'page': '2', 'name': 'rick'});
@@ -47,22 +47,19 @@ void main() {
 
   test('sin texto de búsqueda no manda el parámetro name', () async {
     late Uri requested;
-    final repository = repositoryWith((request) async {
+    await withServer((request) async {
       requested = request.url;
       return http.Response(jsonEncode({'info': {}, 'results': []}), 200);
-    });
-
-    await repository.searchCharacters(page: 1, query: '');
+    }, () => repository.searchCharacters(page: 1, query: ''));
 
     expect(requested.queryParameters, {'page': '1'});
   });
 
   test('un 404 en la búsqueda es una lista vacía, no un error', () async {
-    final repository = repositoryWith(
+    final response = await withServer(
       (_) async => http.Response('{"error":"There is nothing here"}', 404),
+      () => repository.searchCharacters(page: 1, query: 'zzz'),
     );
-
-    final response = await repository.searchCharacters(page: 1, query: 'zzz');
 
     expect(response.isSuccess, isTrue);
     expect(response.data!.isEmpty, isTrue);
@@ -72,9 +69,10 @@ void main() {
   test(
     'un error del servidor en la búsqueda usa el error por defecto',
     () async {
-      final repository = repositoryWith((_) async => http.Response('', 500));
-
-      final response = await repository.searchCharacters(page: 1);
+      final response = await withServer(
+        (_) async => http.Response('', 500),
+        () => repository.searchCharacters(page: 1),
+      );
 
       expect(response.isError, isTrue);
       expect(response.error, ErrorsConstants.errorGettingCharacters);
@@ -82,32 +80,30 @@ void main() {
   );
 
   test('sin conexión devuelve noInternet', () async {
-    final repository = repositoryWith(
+    final response = await withServer(
       (_) async => throw http.ClientException('Failed host lookup'),
+      () => repository.searchCharacters(page: 1),
     );
-
-    final response = await repository.searchCharacters(page: 1);
 
     expect(response.error, ErrorsConstants.noInternet);
   });
 
   test('obtiene un personaje por id', () async {
-    final repository = repositoryWith((request) async {
-      expect(request.url.path, '/api/character/2');
+    late Uri requested;
+    final response = await withServer((request) async {
+      requested = request.url;
       return http.Response(jsonEncode(characterJson(2, 'Morty Smith')), 200);
-    });
+    }, () => repository.getCharacterById(2));
 
-    final response = await repository.getCharacterById(2);
-
+    expect(requested.path, '/api/character/2');
     expect(response.data!.name, 'Morty Smith');
   });
 
   test('un id que no existe da characterNotFound', () async {
-    final repository = repositoryWith(
+    final response = await withServer(
       (_) async => http.Response('{"error":"Character not found"}', 404),
+      () => repository.getCharacterById(99999),
     );
-
-    final response = await repository.getCharacterById(99999);
 
     expect(response.isError, isTrue);
     expect(response.error, ErrorsConstants.characterNotFound);

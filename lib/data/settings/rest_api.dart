@@ -6,14 +6,9 @@ import 'package:portal_remoto/domain/constants/errors_constants.dart';
 
 class RestApi {
   final String hostUrl;
-  final http.Client client;
   final Duration timeout;
 
-  RestApi({
-    required this.hostUrl,
-    http.Client? client,
-    this.timeout = const Duration(seconds: 30),
-  }) : client = client ?? http.Client();
+  RestApi({required this.hostUrl, this.timeout = const Duration(seconds: 30)});
 
   Future<Map<String, String>> headers() async {
     return {"Content-Type": "application/json; charset=utf-8"};
@@ -24,7 +19,7 @@ class RestApi {
       hostUrl + relativeUrl,
     ).replace(queryParameters: query == null || query.isEmpty ? null : query);
     try {
-      final response = await client
+      final response = await http
           .get(url, headers: await headers())
           .timeout(timeout);
       if (response.statusCode >= 200 && response.statusCode <= 299) {

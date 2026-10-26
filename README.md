@@ -151,7 +151,7 @@ test/                           # Tests
 ### Capas
 
 - **domain**: define *qué* hace la app. Los casos de uso aplican las reglas de negocio sin saber de dónde vienen los datos.
-- **data**: define *cómo* se obtienen y guardan los datos. Las funciones de `api/` hacen la petición y lanzan claves de `ErrorsConstants`; el repositorio las envuelve en `PetitionStatusEntity`. Cambiar la fuente (API, mock) solo requiere otra implementación del repositorio y cambiar su Provider.
+- **data**: define *cómo* se obtienen y guardan los datos. Las funciones de `api/` hacen la petición a través del singleton `RickAndMortyApi()` (un `RestApi`) y lanzan claves de `ErrorsConstants`; el repositorio las envuelve en `PetitionStatusEntity`. Cambiar la fuente (API, mock) solo requiere otra implementación del repositorio y cambiar su Provider.
 - **presentation**: dibuja la UI y reacciona a los cambios. Los `ViewModel` llaman casos de uso a través de los Providers, nunca a los repositorios directamente.
 
 ### Inyección de dependencias con Riverpod
@@ -203,7 +203,7 @@ Los textos visibles usan claves de [TextConstants](lib/presentation/constants/te
 |---|---|---|
 | `flutter_riverpod` / `riverpod` | Estado global e inyección de dependencias | Es el mecanismo central de la arquitectura: repositorios, estados y casos de uso se declaran como Providers. |
 | `go_router` | Navegación | Rutas declarativas (`context.go` / `context.push`); el detalle usa la ruta `/characters/:id`. |
-| `http` | Peticiones a la API | Cliente simple; se inyecta en `RestApi` para poder usar `MockClient` en los tests. |
+| `http` | Peticiones a la API | Lo usa `RestApi`. `RickAndMortyApi` es un singleton que extiende `RestApi`, y las funciones de `api/` lo leen con `RickAndMortyApi()`. En los tests se cambia el cliente con `http.runWithClient` + `MockClient`. |
 | `infinite_scroll_pagination` | Scroll infinito del listado | `PagingController` + `PagedListView` piden la siguiente página hasta llegar a `info.pages`. |
 | `shared_preferences` | Persistencia local de clave-valor | La usa la localización para el idioma guardado. |
 | `package_info_plus` | Leer la versión y el número de build | Se muestran en el splash (`Versión {version} ({build})`). |
