@@ -142,7 +142,7 @@ lib/
 │
 ├── flavors/flavors.dart       # Flavor actual y nombre de la app por flavor
 ├── dependency_injection.dart  # Todos los Providers (repositorios, estados y casos de uso)
-└── main.dart                  # Punto de entrada: lee el flavor y envuelve la app en ProviderScope
+└── main.dart                  # Punto de entrada: lee el flavor y envuelve la app en UncontrolledProviderScope(container: di)
 
 assets/translate_dictionaries/  # Traducciones (es.json)
 test/                           # Tests
@@ -151,12 +151,12 @@ test/                           # Tests
 ### Capas
 
 - **domain**: define *qué* hace la app. Los casos de uso aplican las reglas de negocio sin saber de dónde vienen los datos.
-- **data**: define *cómo* se obtienen y guardan los datos. Las funciones de `api/` hacen la petición a través del singleton `RickAndMortyApi()` (un `RestApi`) y lanzan claves de `ErrorsConstants`; el repositorio las envuelve en `PetitionStatusEntity`. Cambiar la fuente (API, mock) solo requiere otra implementación del repositorio y cambiar su Provider.
+- **data**: define *cómo* se obtienen y guardan los datos. Las funciones de `api/` hacen la petición con `di.read(rickAndMortyApiProvider)` y lanzan claves de `ErrorsConstants`; el repositorio las envuelve en `PetitionStatusEntity`. Cambiar la fuente (API, mock) solo requiere otra implementación del repositorio y cambiar su Provider.
 - **presentation**: dibuja la UI y reacciona a los cambios. Los `ViewModel` llaman casos de uso a través de los Providers, nunca a los repositorios directamente.
 
 ### Inyección de dependencias con Riverpod
 
-[dependency_injection.dart](lib/dependency_injection.dart) declara todos los `Provider`/`NotifierProvider`, agrupados en repositorios, estados y casos de uso. `characterRepositoryProvider` elige la implementación según el flavor: `CharacterRepositoryMock` en `mock` y `CharacterRepositoryImpl` (API real) en `dev` y `prod`.
+[dependency_injection.dart](lib/dependency_injection.dart) declara todos los `Provider`/`NotifierProvider`, agrupados en APIs, repositorios, estados y casos de uso. También expone `di`, un `ProviderContainer` global que la app comparte con `UncontrolledProviderScope` en `main.dart`: los widgets y ViewModels leen con `ref`, y el código sin `ref` (las funciones de `data/.../api/`) lee el mismo contenedor con `di.read(...)`, así que todos usan las mismas instancias. `characterRepositoryProvider` elige la implementación según el flavor: `CharacterRepositoryMock` en `mock` y `CharacterRepositoryImpl` (API real) en `dev` y `prod`.
 
 ### Patrón de cada pantalla (Page / Screen / ViewModel)
 
@@ -203,7 +203,7 @@ Los textos visibles usan claves de [TextConstants](lib/presentation/constants/te
 |---|---|---|
 | `flutter_riverpod` / `riverpod` | Estado global e inyección de dependencias | Es el mecanismo central de la arquitectura: repositorios, estados y casos de uso se declaran como Providers. |
 | `go_router` | Navegación | Rutas declarativas (`context.go` / `context.push`); el detalle usa la ruta `/characters/:id`. |
-| `http` | Peticiones a la API | Lo usa `RestApi`. `RickAndMortyApi` es un singleton que extiende `RestApi`, y las funciones de `api/` lo leen con `RickAndMortyApi()`. En los tests se cambia el cliente con `http.runWithClient` + `MockClient`. |
+| `http` | Peticiones a la API | Lo usa `RestApi`. `RickAndMortyApi` (un `RestApi`) se registra en `rickAndMortyApiProvider` y las funciones de `api/` lo leen con `di.read(rickAndMortyApiProvider)`. En los tests se cambia el cliente con `http.runWithClient` + `MockClient`. |
 | `infinite_scroll_pagination` | Scroll infinito del listado | `PagingController` + `PagedListView` piden la siguiente página hasta llegar a `info.pages`. |
 | `shared_preferences` | Persistencia local de clave-valor | La usa la localización para el idioma guardado. |
 | `package_info_plus` | Leer la versión y el número de build | Se muestran en el splash (`Versión {version} ({build})`). |

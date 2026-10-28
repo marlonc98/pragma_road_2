@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:portal_remoto/data/dtos/character_dto.dart';
-import 'package:portal_remoto/data/settings/rick_and_morty_api.dart';
+import 'package:portal_remoto/dependency_injection.dart';
 import 'package:portal_remoto/domain/constants/errors_constants.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
 import 'package:portal_remoto/domain/entities/search_result_entity.dart';
@@ -13,13 +13,15 @@ Future<SearchResultEntity<CharacterEntity>> searchCharactersApiImpl({
 }) async {
   final String responseText;
   try {
-    responseText = await RickAndMortyApi().get(
-      '/character',
-      query: {
-        'page': '$page',
-        if (query != null && query.isNotEmpty) 'name': query,
-      },
-    );
+    responseText = await di
+        .read(rickAndMortyApiProvider)
+        .get(
+          '/character',
+          query: {
+            'page': '$page',
+            if (query != null && query.isNotEmpty) 'name': query,
+          },
+        );
   } catch (error) {
     if (error == ErrorsConstants.notFound) {
       return SearchResultEntity.empty(
