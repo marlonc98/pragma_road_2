@@ -17,14 +17,15 @@ class TextConstants {
   static const charactersNoResults = "charactersNoResults";
   static const charactersClearSearch = "charactersClearSearch";
 
-  static const characterDetailDefaultTitle = "characterDetailDefaultTitle";
-  static const characterDetailStatus = "characterDetailStatus";
   static const characterDetailSpecies = "characterDetailSpecies";
   static const characterDetailType = "characterDetailType";
   static const characterDetailGender = "characterDetailGender";
   static const characterDetailOrigin = "characterDetailOrigin";
   static const characterDetailLocation = "characterDetailLocation";
-  static const characterDetailEpisodes = "characterDetailEpisodes";
+  static const characterDetailId = "characterDetailId";
+  static const characterDetailSummary = "characterDetailSummary";
+  static const characterDetailSummaryText =
+      "characterDetailSummaryText"; //name,species,status,gender
   static const characterUnknownPlace = "characterUnknownPlace";
 
   static const characterStatusAlive = "characterStatusAlive";

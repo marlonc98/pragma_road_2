@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class ImageNetworkWithLoadWidget extends StatefulWidget {
@@ -10,6 +11,7 @@ class ImageNetworkWithLoadWidget extends StatefulWidget {
   final String? defaultImage;
   final Map<String, String>? headers;
   final bool notShowDefaultImage;
+  final bool useCache;
 
   const ImageNetworkWithLoadWidget(
     this.imageUrl, {
@@ -20,6 +22,7 @@ class ImageNetworkWithLoadWidget extends StatefulWidget {
     this.fit = BoxFit.cover,
     this.headers,
     this.notShowDefaultImage = false,
+    this.useCache = false,
   });
 
   @override
@@ -84,8 +87,13 @@ class _ImageNetworkWithLoadWidgetState
   Widget build(BuildContext context) {
     return Image(
       image: _isWeb()
-          ? NetworkImage(widget.imageUrl, headers: widget.headers)
-                as ImageProvider<Object>
+          ? (widget.useCache
+                ? CachedNetworkImageProvider(
+                    widget.imageUrl,
+                    headers: widget.headers,
+                  )
+                : NetworkImage(widget.imageUrl, headers: widget.headers)
+                      as ImageProvider<Object>)
           : (_isLocal()
                 ? AssetImage(widget.imageUrl) as ImageProvider<Object>
                 : FileImage(File(widget.imageUrl)) as ImageProvider<Object>),

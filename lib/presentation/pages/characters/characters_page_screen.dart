@@ -26,7 +26,7 @@ class CharactersPageScreen extends ConsumerWidget {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: SearchBarWidget(
                 controller: vm.searchController,
                 hintText: i18n(TextConstants.charactersSearchHint),
@@ -40,20 +40,24 @@ class CharactersPageScreen extends ConsumerWidget {
                 child: PagingListener<int, CharacterEntity>(
                   controller: vm.pagingController,
                   builder: (context, state, fetchNextPage) =>
-                      PagedListView<int, CharacterEntity>(
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                      PagedGridView<int, CharacterEntity>(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                         state: state,
                         fetchNextPage: fetchNextPage,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisSpacing: 16,
+                              crossAxisSpacing: 16,
+                              mainAxisExtent: CharacterCardWidget.height,
+                            ),
                         builderDelegate:
                             PagedChildBuilderDelegate<CharacterEntity>(
                               itemBuilder: (context, character, index) =>
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
-                                    child: CharacterCardWidget(
-                                      character: character,
-                                      onTap: () =>
-                                          vm.handleOpenCharacter(character),
-                                    ),
+                                  CharacterCardWidget(
+                                    character: character,
+                                    onTap: () =>
+                                        vm.handleOpenCharacter(character),
                                   ),
                               firstPageProgressIndicatorBuilder: (context) =>
                                   const LoadingWidget(),

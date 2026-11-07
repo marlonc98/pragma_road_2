@@ -1,5 +1,6 @@
 import 'package:portal_remoto/domain/constants/errors_constants.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
+import 'package:portal_remoto/domain/entities/character_filter_entity.dart';
 import 'package:portal_remoto/domain/entities/petition_status_entity.dart';
 import 'package:portal_remoto/domain/entities/search_result_entity.dart';
 import 'package:portal_remoto/domain/repositories/character_repository.dart';
@@ -113,12 +114,12 @@ class CharacterRepositoryMock extends CharacterRepository {
 
   @override
   Future<PetitionStatusEntity<SearchResultEntity<CharacterEntity>>>
-  searchCharacters({required int page, String? query}) async {
+  searchCharacters({
+    required int page,
+    CharacterFilterEntity filter = const CharacterFilterEntity(),
+  }) async {
     await Future.delayed(_delay);
-    final search = query?.toLowerCase() ?? '';
-    final characters = _fakeCharacters
-        .where((character) => character.name.toLowerCase().contains(search))
-        .toList();
+    final characters = _fakeCharacters.where(filter.matches).toList();
     return PetitionStatusEntity.success(
       data: SearchResultEntity(
         currentPage: page,

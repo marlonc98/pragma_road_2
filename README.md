@@ -5,7 +5,8 @@ App Flutter para **buscar personajes de Rick and Morty** y ver su detalle, usand
 ## ¿Qué hace?
 
 - **Splash**: carga las traducciones y la versión de la app, y luego navega al listado.
-- **Personajes**: lista con scroll infinito (20 por página), búsqueda por nombre con *debounce*, *pull to refresh* y estados de carga, error y sin resultados.
+- **Personajes**: lista con scroll infinito (20 por página), búsqueda por palabra clave con *debounce*, *pull to refresh* y estados de carga, error y sin resultados.
+- **Búsqueda por palabra clave**: el texto se busca en nombre, especie y tipo (coincidencia parcial). Si además es un estado o un género, en inglés o en español (`vivo`, `muerto`, `desconocido`, `mujer`, `masculino`, `sin género`…), también filtra por ese campo.
 - **Detalle**: imagen, estado, género, número de episodios, especie, tipo, origen y última ubicación conocida.
 
 Proyecto construido con **Clean Architecture** (domain / data / presentation), MVVM en la capa de presentación, **Riverpod** para estado global e inyección de dependencias, **go_router** para la navegación y **flavors** (`mock`, `dev` y `prod`).
@@ -179,13 +180,23 @@ Los repositorios devuelven [PetitionStatusEntity<T>](lib/domain/entities/petitio
 
 `fullSize` controla cómo se centra el estado (`inContainer`, `inExpanded` o `notFullSize`).
 
+### Búsqueda por palabra clave
+
+La API solo combina filtros con Y (`name=rick&species=human`), así que [SearchCharactersUseCase](lib/domain/use_cases/character/search_characters_use_case.dart) arma un `CharacterFilterEntity` por campo y pide la misma página de cada uno en paralelo. Junta los resultados en orden de prioridad (nombre, especie, tipo, estado, género) y descarta un personaje si ya coincide con un filtro anterior; así nadie se repite, ni dentro de una página ni entre páginas. `lastpage` es la mayor de las búsquedas.
+
+### Caché y conexión
+
+- **Personajes**: `CharacterRepositoryImpl` guarda en memoria cada personaje que llega en una búsqueda o en un detalle. Abrir el detalle desde la lista no hace otra petición.
+- **Imágenes**: `ImageNetworkWithLoadWidget` con `useCache: true` usa `CachedNetworkImageProvider`, que las guarda en disco.
+- **Timeout**: si una petición tarda más de 30 s, `RestApi.hasInternetConnection()` revisa la conexión con `connectivity_plus` para mostrar "Sin conexión a internet" o "La solicitud tardó demasiado".
+
 ### Tests
 
 ```bash
 flutter test
 ```
 
-Cubren el `CharacterDto`, el `CharacterRepositoryImpl` contra un `MockClient` de `http` (parámetros enviados, 404 como lista vacía o `characterNotFound`, errores de red) y los casos de uso sobre el repositorio mock.
+Cubren el `CharacterDto`, el `CharacterRepositoryImpl` contra un `MockClient` de `http` (parámetros de cada filtro, 404 como lista vacía o `characterNotFound`, errores de red y caché), el timeout de `RestApi` con y sin conexión, y la búsqueda por palabra clave sobre el repositorio mock.
 
 ### Imágenes
 
@@ -204,6 +215,8 @@ Los textos visibles usan claves de [TextConstants](lib/presentation/constants/te
 | `flutter_riverpod` / `riverpod` | Estado global e inyección de dependencias | Es el mecanismo central de la arquitectura: repositorios, estados y casos de uso se declaran como Providers. |
 | `go_router` | Navegación | Rutas declarativas (`context.go` / `context.push`); el detalle usa la ruta `/characters/:id`. |
 | `http` | Peticiones a la API | Lo usa `RestApi`. `RickAndMortyApi` (un `RestApi`) se registra en `rickAndMortyApiProvider` y las funciones de `api/` lo leen con `di.read(rickAndMortyApiProvider)`. En los tests se cambia el cliente con `http.runWithClient` + `MockClient`. |
+| `cached_network_image` | Caché de imágenes en disco | Evita volver a descargar las imágenes de los personajes. |
+| `connectivity_plus` | Saber si hay red | Ante un timeout, distingue "sin internet" de "tardó demasiado". |
 | `infinite_scroll_pagination` | Scroll infinito del listado | `PagingController` + `PagedListView` piden la siguiente página hasta llegar a `info.pages`. |
 | `shared_preferences` | Persistencia local de clave-valor | La usa la localización para el idioma guardado. |
 | `package_info_plus` | Leer la versión y el número de build | Se muestran en el splash (`Versión {version} ({build})`). |
@@ -220,5 +233,5 @@ El [.gitignore](.gitignore) excluye todo lo que es local a la máquina o sensibl
 ## Limitaciones conocidas / próximos pasos
 
 - La app está solo en español (`es`); los valores que vienen de la API (especie, tipo, lugares) se muestran tal cual, en inglés.
-- La búsqueda es solo por nombre; la API también permite filtrar por estado, especie y género.
-- No hay caché: cada vez que se abre un detalle se vuelve a pedir el personaje.
+- La caché de personajes es solo en memoria: se pierde al cerrar la app y no permite usarla sin conexión.
+- `connectivity_plus` sabe si hay red, no si esa red tiene salida a internet; con un wifi sin internet se muestra "tardó demasiado".

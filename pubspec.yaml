@@ -41,6 +41,8 @@ dependencies:
   package_info_plus: ^10.2.2
   http: ^1.6.0
   infinite_scroll_pagination: ^5.1.1
+  cached_network_image: ^4.0.5
+  connectivity_plus: ^7.3.2
 
 dev_dependencies:
   flutter_test:

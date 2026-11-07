@@ -4,12 +4,13 @@ import 'package:portal_remoto/data/dtos/character_dto.dart';
 import 'package:portal_remoto/dependency_injection.dart';
 import 'package:portal_remoto/domain/constants/errors_constants.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
+import 'package:portal_remoto/domain/entities/character_filter_entity.dart';
 import 'package:portal_remoto/domain/entities/search_result_entity.dart';
 
 Future<SearchResultEntity<CharacterEntity>> searchCharactersApiImpl({
   required int page,
   required int itemsPerPage,
-  String? query,
+  required CharacterFilterEntity filter,
 }) async {
   final String responseText;
   try {
@@ -19,7 +20,11 @@ Future<SearchResultEntity<CharacterEntity>> searchCharactersApiImpl({
           '/character',
           query: {
             'page': '$page',
-            if (query != null && query.isNotEmpty) 'name': query,
+            if (filter.name != null) 'name': filter.name!,
+            if (filter.species != null) 'species': filter.species!,
+            if (filter.type != null) 'type': filter.type!,
+            if (filter.status != null) 'status': filter.status!.name,
+            if (filter.gender != null) 'gender': filter.gender!.name,
           },
         );
   } catch (error) {
