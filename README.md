@@ -5,9 +5,9 @@ App Flutter para **buscar personajes de Rick and Morty** y ver su detalle, usand
 ## ¿Qué hace?
 
 - **Splash**: carga las traducciones y la versión de la app, y luego navega al listado.
-- **Personajes**: lista con scroll infinito (20 por página), búsqueda por palabra clave con *debounce*, *pull to refresh* y estados de carga, error y sin resultados.
+- **Personajes**: cuadrícula de 2 columnas con tarjetas (imagen, nombre, estado, especie y última ubicación), scroll infinito (20 por página), búsqueda por palabra clave con *debounce*, *pull to refresh* y estados de carga, error y sin resultados.
 - **Búsqueda por palabra clave**: el texto se busca en nombre, especie y tipo (coincidencia parcial). Si además es un estado o un género, en inglés o en español (`vivo`, `muerto`, `desconocido`, `mujer`, `masculino`, `sin género`…), también filtra por ese campo.
-- **Detalle**: imagen, estado, género, número de episodios, especie, tipo, origen y última ubicación conocida.
+- **Detalle**: imagen a todo el ancho con el nombre encima, estado, una tarjeta con especie, tipo, género, origen, última ubicación e ID, y un resumen del personaje.
 
 Proyecto construido con **Clean Architecture** (domain / data / presentation), MVVM en la capa de presentación, **Riverpod** para estado global e inyección de dependencias, **go_router** para la navegación y **flavors** (`mock`, `dev` y `prod`).
 
@@ -131,12 +131,12 @@ lib/
 ├── presentation/        # UI + estado de UI
 │   ├── pages/            # Cada pantalla: Page + Screen + ViewModel (+ widgets/ propios)
 │   │   ├── splash/            # Carga traducciones y versión, luego va al listado
-│   │   ├── characters/        # Listado paginado con búsqueda (+ widgets/character_card_widget.dart)
-│   │   └── character_detail/  # Detalle de un personaje por id
+│   │   ├── characters/        # Cuadrícula paginada con búsqueda (+ widgets/character_card_widget.dart)
+│   │   └── character_detail/  # Detalle de un personaje por id (+ widgets/character_info_row_widget.dart)
 │   ├── widgets/          # Reutilizables: buttons/, images/, inputs/, lists/ y loaders_status/
 │   ├── states/           # Implementación Riverpod de LocalizationState
 │   ├── utils/            # ViewModel base, StfViewModelAdapter y textos/colores de estado y género
-│   ├── theme/            # AppTheme (claro y oscuro)
+│   ├── theme/            # AppTheme (claro y oscuro): colores de fondo, AppBar, tarjetas y buscador
 │   ├── constants/        # TextConstants (claves de traducción)
 │   ├── router.dart       # Rutas con go_router
 │   └── app.dart          # MaterialApp.router
@@ -217,10 +217,10 @@ Los textos visibles usan claves de [TextConstants](lib/presentation/constants/te
 | `http` | Peticiones a la API | Lo usa `RestApi`. `RickAndMortyApi` (un `RestApi`) se registra en `rickAndMortyApiProvider` y las funciones de `api/` lo leen con `di.read(rickAndMortyApiProvider)`. En los tests se cambia el cliente con `http.runWithClient` + `MockClient`. |
 | `cached_network_image` | Caché de imágenes en disco | Evita volver a descargar las imágenes de los personajes. |
 | `connectivity_plus` | Saber si hay red | Ante un timeout, distingue "sin internet" de "tardó demasiado". |
-| `infinite_scroll_pagination` | Scroll infinito del listado | `PagingController` + `PagedListView` piden la siguiente página hasta llegar a `info.pages`. |
+| `infinite_scroll_pagination` | Scroll infinito del listado | `PagingController` + `PagedGridView` piden la siguiente página hasta llegar a `info.pages`. |
 | `shared_preferences` | Persistencia local de clave-valor | La usa la localización para el idioma guardado. |
 | `package_info_plus` | Leer la versión y el número de build | Se muestran en el splash (`Versión {version} ({build})`). |
-| `flutter_flavorizr` (dev) | Generar los flavors `mock`, `dev` y `prod` | Configura Android e iOS (ids, nombres, esquemas de Xcode) desde `pubspec.yaml`. Está configurado para no tocar `main.dart`, `app.dart` ni los íconos. |
+| `flutter_flavorizr` (dev) | Generar los flavors `mock`, `dev` y `prod` | Configura Android e iOS (ids, nombres, esquemas de Xcode) desde `pubspec.yaml`. Está configurado para no tocar `main.dart`, `app.dart` ni los íconos; en iOS cada flavor usa su propio icon set (`AppIcon-mock`, `AppIcon-dev`, `AppIcon-prod` en `Assets.xcassets`), por ahora copias de `AppIcon`. |
 | `flutter_test`, `flutter_lints` (dev) | Tests y reglas de análisis estático | |
 
 ## Archivos que no se versionan
