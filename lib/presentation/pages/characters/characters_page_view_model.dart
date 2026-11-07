@@ -9,7 +9,7 @@ import 'package:portal_remoto/domain/entities/character_entity.dart';
 import 'package:portal_remoto/presentation/pages/character_detail/character_detail_page.dart';
 import 'package:portal_remoto/presentation/pages/characters/characters_page.dart';
 import 'package:portal_remoto/presentation/utils/functions_helper.dart';
-import 'package:portal_remoto/presentation/utils/view_model.dart';
+import 'package:portal_remoto/presentation/pages/character_detail/core/view_model.dart';
 
 class CharactersPageViewModel extends ViewModel<CharactersPage> {
   CharactersPageViewModel({

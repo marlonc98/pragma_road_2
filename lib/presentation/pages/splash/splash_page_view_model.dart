@@ -2,7 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:portal_remoto/dependency_injection.dart';
 import 'package:portal_remoto/presentation/pages/characters/characters_page.dart';
 import 'package:portal_remoto/presentation/pages/splash/splash_page.dart';
-import 'package:portal_remoto/presentation/utils/view_model.dart';
+import 'package:portal_remoto/presentation/pages/character_detail/core/view_model.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class SplashPageViewModel extends ViewModel<SplashPage> {

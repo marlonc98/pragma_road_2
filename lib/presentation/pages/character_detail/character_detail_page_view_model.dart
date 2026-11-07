@@ -1,6 +1,6 @@
 import 'package:portal_remoto/dependency_injection.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
-import 'package:portal_remoto/domain/entities/petition_status_entity.dart';
+import 'package:portal_remoto/domain/core/async_state.dart';
 import 'package:portal_remoto/presentation/pages/character_detail/character_detail_page.dart';
 import 'package:portal_remoto/presentation/pages/character_detail/core/view_model.dart';
 

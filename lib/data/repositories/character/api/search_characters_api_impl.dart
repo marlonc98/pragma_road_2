@@ -4,7 +4,7 @@ import 'package:portal_remoto/data/dtos/character_dto.dart';
 import 'package:portal_remoto/dependency_injection.dart';
 import 'package:portal_remoto/domain/constants/errors_constants.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
-import 'package:portal_remoto/domain/entities/search_result.dart';
+import 'package:portal_remoto/domain/core/search_result.dart';
 
 Future<SearchResult<CharacterEntity>> searchCharactersApiImpl({
   required int page,

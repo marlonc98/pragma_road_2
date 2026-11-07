@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:portal_remoto/presentation/pages/character_detail/character_detail_page_screen.dart';
 import 'package:portal_remoto/presentation/pages/character_detail/character_detail_page_view_model.dart';
-import 'package:portal_remoto/presentation/utils/stf_view_model_adapter.dart';
+import 'package:portal_remoto/presentation/pages/character_detail/core/stf_view_model_adapter.dart';
 
 class CharacterDetailPage extends StatefulWidget {
   static const String route = '/characters/:id';

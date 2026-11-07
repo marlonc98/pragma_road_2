@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:portal_remoto/domain/entities/async_state.dart';
-import 'package:portal_remoto/domain/entities/search_result.dart';
+import 'package:portal_remoto/domain/core/async_state.dart';
+import 'package:portal_remoto/domain/core/search_result.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:portal_remoto/dependency_injection.dart';
 import 'package:portal_remoto/presentation/widgets/loaders_status/error_loading_widget.dart';
