@@ -8,6 +8,7 @@ import 'package:portal_remoto/domain/constants/errors_constants.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
 import 'package:portal_remoto/presentation/pages/character_detail/character_detail_page.dart';
 import 'package:portal_remoto/presentation/pages/characters/characters_page.dart';
+import 'package:portal_remoto/presentation/utils/functions_helper.dart';
 import 'package:portal_remoto/presentation/utils/view_model.dart';
 
 class CharactersPageViewModel extends ViewModel<CharactersPage> {
@@ -51,8 +52,10 @@ class CharactersPageViewModel extends ViewModel<CharactersPage> {
 
   void handleSearchChanged(String _) {
     notifyListeners();
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 400), handleReload);
+    _searchDebounce = FunctionsHelper.resetSearch(
+      searchFunction: handleReload,
+      timer: _searchDebounce,
+    );
   }
 
   void handleClearSearch() {

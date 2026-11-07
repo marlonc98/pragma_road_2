@@ -1,14 +1,10 @@
 import 'package:portal_remoto/domain/entities/character_entity.dart';
-import 'package:portal_remoto/domain/entities/character_filter_entity.dart';
-import 'package:portal_remoto/domain/entities/petition_status_entity.dart';
-import 'package:portal_remoto/domain/entities/search_result_entity.dart';
+import 'package:portal_remoto/domain/entities/async_state.dart';
+import 'package:portal_remoto/domain/entities/search_result.dart';
 
 abstract class CharacterRepository {
-  Future<PetitionStatusEntity<SearchResultEntity<CharacterEntity>>>
-  searchCharacters({
-    required int page,
-    CharacterFilterEntity filter = const CharacterFilterEntity(),
-  });
+  Future<AsyncState<SearchResult<CharacterEntity>>>
+  searchCharacters({required int page, String? query});
 
-  Future<PetitionStatusEntity<CharacterEntity>> getCharacterById(int id);
+  Future<AsyncState<CharacterEntity>> getCharacterById(int id);
 }

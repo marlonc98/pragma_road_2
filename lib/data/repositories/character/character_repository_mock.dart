@@ -1,8 +1,7 @@
 import 'package:portal_remoto/domain/constants/errors_constants.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
-import 'package:portal_remoto/domain/entities/character_filter_entity.dart';
-import 'package:portal_remoto/domain/entities/petition_status_entity.dart';
-import 'package:portal_remoto/domain/entities/search_result_entity.dart';
+import 'package:portal_remoto/domain/entities/async_state.dart';
+import 'package:portal_remoto/domain/entities/search_result.dart';
 import 'package:portal_remoto/domain/repositories/character_repository.dart';
 
 String _avatar(int id) =>
@@ -113,15 +112,15 @@ class CharacterRepositoryMock extends CharacterRepository {
   final Duration _delay = const Duration(milliseconds: 400);
 
   @override
-  Future<PetitionStatusEntity<SearchResultEntity<CharacterEntity>>>
-  searchCharacters({
-    required int page,
-    CharacterFilterEntity filter = const CharacterFilterEntity(),
-  }) async {
+  Future<AsyncState<SearchResult<CharacterEntity>>>
+  searchCharacters({required int page, String? query}) async {
     await Future.delayed(_delay);
-    final characters = _fakeCharacters.where(filter.matches).toList();
-    return PetitionStatusEntity.success(
-      data: SearchResultEntity(
+    final search = query?.toLowerCase() ?? '';
+    final characters = _fakeCharacters
+        .where((character) => character.name.toLowerCase().contains(search))
+        .toList();
+    return AsyncState.success(
+      data: SearchResult(
         currentPage: page,
         totalItems: characters.length,
         data: characters
@@ -135,12 +134,12 @@ class CharacterRepositoryMock extends CharacterRepository {
   }
 
   @override
-  Future<PetitionStatusEntity<CharacterEntity>> getCharacterById(int id) async {
+  Future<AsyncState<CharacterEntity>> getCharacterById(int id) async {
     await Future.delayed(_delay);
     final index = _fakeCharacters.indexWhere((element) => element.id == id);
     if (index == -1) {
-      return PetitionStatusEntity.fromError(ErrorsConstants.characterNotFound);
+      return AsyncState.fromError(ErrorsConstants.characterNotFound);
     }
-    return PetitionStatusEntity.success(data: _fakeCharacters[index]);
+    return AsyncState.success(data: _fakeCharacters[index]);
   }
 }

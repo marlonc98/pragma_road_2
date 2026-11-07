@@ -2,7 +2,7 @@ import 'package:portal_remoto/dependency_injection.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
 import 'package:portal_remoto/domain/entities/petition_status_entity.dart';
 import 'package:portal_remoto/presentation/pages/character_detail/character_detail_page.dart';
-import 'package:portal_remoto/presentation/utils/view_model.dart';
+import 'package:portal_remoto/presentation/pages/character_detail/core/view_model.dart';
 
 class CharacterDetailPageViewModel extends ViewModel<CharacterDetailPage> {
   CharacterDetailPageViewModel({
@@ -14,11 +14,11 @@ class CharacterDetailPageViewModel extends ViewModel<CharacterDetailPage> {
     handleLoadCharacter();
   }
 
-  PetitionStatusEntity<CharacterEntity> character =
-      PetitionStatusEntity<CharacterEntity>.loading();
+  AsyncState<CharacterEntity> character =
+      AsyncState<CharacterEntity>.loading();
 
   Future<void> handleLoadCharacter() async {
-    character = PetitionStatusEntity<CharacterEntity>.loading();
+    character = AsyncState<CharacterEntity>.loading();
     notifyListeners();
     final response = await ref
         .read(getCharacterByIdUseCaseProvider)

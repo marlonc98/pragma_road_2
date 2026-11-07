@@ -5,8 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:portal_remoto/data/repositories/character/character_repository_impl.dart';
 import 'package:portal_remoto/domain/constants/errors_constants.dart';
-import 'package:portal_remoto/domain/entities/character_entity.dart';
-import 'package:portal_remoto/domain/entities/character_filter_entity.dart';
 
 Map<String, dynamic> characterJson(int id, String name) => {
   'id': id,
@@ -28,24 +26,18 @@ void main() {
 
   setUp(() => repository = CharacterRepositoryImpl());
 
-  test('busca por nombre y página y arma el SearchResultEntity', () async {
+  test('busca por nombre y página y arma el SearchResult', () async {
     late Uri requested;
-    final response = await withServer(
-      (request) async {
-        requested = request.url;
-        return http.Response(
-          jsonEncode({
-            'info': {'count': 25, 'pages': 2},
-            'results': [characterJson(1, 'Rick Sanchez')],
-          }),
-          200,
-        );
-      },
-      () => repository.searchCharacters(
-        page: 2,
-        filter: const CharacterFilterEntity(name: 'rick'),
-      ),
-    );
+    final response = await withServer((request) async {
+      requested = request.url;
+      return http.Response(
+        jsonEncode({
+          'info': {'count': 25, 'pages': 2},
+          'results': [characterJson(1, 'Rick Sanchez')],
+        }),
+        200,
+      );
+    }, () => repository.searchCharacters(page: 2, query: 'rick'));
 
     expect(requested.path, '/api/character');
     expect(requested.queryParameters, {'page': '2', 'name': 'rick'});
@@ -55,39 +47,12 @@ void main() {
     expect(response.data!.lastpage, 2);
   });
 
-  test('manda cada campo del filtro como parámetro', () async {
-    late Uri requested;
-    await withServer(
-      (request) async {
-        requested = request.url;
-        return http.Response(jsonEncode({'info': {}, 'results': []}), 200);
-      },
-      () => repository.searchCharacters(
-        page: 1,
-        filter: const CharacterFilterEntity(
-          species: 'alien',
-          type: 'parasite',
-          status: CharacterStatus.dead,
-          gender: CharacterGender.female,
-        ),
-      ),
-    );
-
-    expect(requested.queryParameters, {
-      'page': '1',
-      'species': 'alien',
-      'type': 'parasite',
-      'status': 'dead',
-      'gender': 'female',
-    });
-  });
-
-  test('sin filtro solo manda la página', () async {
+  test('sin texto de búsqueda no manda el parámetro name', () async {
     late Uri requested;
     await withServer((request) async {
       requested = request.url;
       return http.Response(jsonEncode({'info': {}, 'results': []}), 200);
-    }, () => repository.searchCharacters(page: 1));
+    }, () => repository.searchCharacters(page: 1, query: ''));
 
     expect(requested.queryParameters, {'page': '1'});
   });
@@ -95,10 +60,7 @@ void main() {
   test('un 404 en la búsqueda es una lista vacía, no un error', () async {
     final response = await withServer(
       (_) async => http.Response('{"error":"There is nothing here"}', 404),
-      () => repository.searchCharacters(
-        page: 1,
-        filter: const CharacterFilterEntity(name: 'zzz'),
-      ),
+      () => repository.searchCharacters(page: 1, query: 'zzz'),
     );
 
     expect(response.isSuccess, isTrue);

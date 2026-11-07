@@ -5,8 +5,7 @@ App Flutter para **buscar personajes de Rick and Morty** y ver su detalle, usand
 ## ¿Qué hace?
 
 - **Splash**: carga las traducciones y la versión de la app, y luego navega al listado.
-- **Personajes**: cuadrícula de 2 columnas con tarjetas (imagen, nombre, estado, especie y última ubicación), scroll infinito (20 por página), búsqueda por palabra clave con *debounce*, *pull to refresh* y estados de carga, error y sin resultados.
-- **Búsqueda por palabra clave**: el texto se busca en nombre, especie y tipo (coincidencia parcial). Si además es un estado o un género, en inglés o en español (`vivo`, `muerto`, `desconocido`, `mujer`, `masculino`, `sin género`…), también filtra por ese campo.
+- **Personajes**: cuadrícula de 2 columnas con tarjetas (imagen, nombre, estado, especie y última ubicación), scroll infinito (20 por página), búsqueda por nombre con *debounce* (`FunctionsHelper.resetSearch`, 500 ms), *pull to refresh* y estados de carga, error y sin resultados.
 - **Detalle**: imagen a todo el ancho con el nombre encima, estado, una tarjeta con especie, tipo, género, origen, última ubicación e ID, y un resumen del personaje.
 
 Proyecto construido con **Clean Architecture** (domain / data / presentation), MVVM en la capa de presentación, **Riverpod** para estado global e inyección de dependencias, **go_router** para la navegación y **flavors** (`mock`, `dev` y `prod`).
@@ -93,7 +92,7 @@ flowchart TB
         direction TB
         UseCase["UseCases<br/>Load, SearchCharacters, GetCharacterById"]
         RepoI["LocalizationRepository, CharacterRepository<br/>(interfaces abstractas)"]
-        Entities["Entities<br/>CharacterEntity, PetitionStatusEntity&lt;T&gt;, SearchResultEntity&lt;T&gt;"]
+        Entities["Entities<br/>CharacterEntity, AsyncState&lt;T&gt;, SearchResult&lt;T&gt;"]
         UseCase --> RepoI
         UseCase -.->|usa| Entities
     end
@@ -115,7 +114,7 @@ flowchart TB
 ```
 lib/
 ├── domain/              # Reglas de negocio puras, sin Flutter ni detalles de almacenamiento
-│   ├── entities/         # CharacterEntity, PetitionStatusEntity<T>, SearchResultEntity<T>
+│   ├── entities/         # CharacterEntity, AsyncState<T>, SearchResult<T>
 │   ├── repositories/     # Contratos abstractos (LocalizationRepository, CharacterRepository)
 │   ├── use_cases/        # Una operación de negocio por clase (load, character/search, character/get_by_id)
 │   ├── states/           # Contrato de estado global (LocalizationState)
@@ -135,7 +134,7 @@ lib/
 │   │   └── character_detail/  # Detalle de un personaje por id (+ widgets/character_info_row_widget.dart)
 │   ├── widgets/          # Reutilizables: buttons/, images/, inputs/, lists/ y loaders_status/
 │   ├── states/           # Implementación Riverpod de LocalizationState
-│   ├── utils/            # ViewModel base, StfViewModelAdapter y textos/colores de estado y género
+│   ├── utils/            # ViewModel base, StfViewModelAdapter, FunctionsHelper (debounce) y textos/colores de estado y género
 │   ├── theme/            # AppTheme (claro y oscuro): colores de fondo, AppBar, tarjetas y buscador
 │   ├── constants/        # TextConstants (claves de traducción)
 │   ├── router.dart       # Rutas con go_router
@@ -152,7 +151,7 @@ test/                           # Tests
 ### Capas
 
 - **domain**: define *qué* hace la app. Los casos de uso aplican las reglas de negocio sin saber de dónde vienen los datos.
-- **data**: define *cómo* se obtienen y guardan los datos. Las funciones de `api/` hacen la petición con `di.read(rickAndMortyApiProvider)` y lanzan claves de `ErrorsConstants`; el repositorio las envuelve en `PetitionStatusEntity`. Cambiar la fuente (API, mock) solo requiere otra implementación del repositorio y cambiar su Provider.
+- **data**: define *cómo* se obtienen y guardan los datos. Las funciones de `api/` hacen la petición con `di.read(rickAndMortyApiProvider)` y lanzan claves de `ErrorsConstants`; el repositorio las envuelve en `AsyncState`. Cambiar la fuente (API, mock) solo requiere otra implementación del repositorio y cambiar su Provider.
 - **presentation**: dibuja la UI y reacciona a los cambios. Los `ViewModel` llaman casos de uso a través de los Providers, nunca a los repositorios directamente.
 
 ### Inyección de dependencias con Riverpod
@@ -165,24 +164,20 @@ test/                           # Tests
 - **`*_page_view_model.dart`**: extiende `ViewModel<T>` (un `ChangeNotifier` con acceso a `context` y `WidgetRef`), llama a los casos de uso y expone el estado a la UI.
 - **`*_page_screen.dart`**: widget que recibe el `ViewModel` y solo dibuja UI.
 
-### Manejo de resultados asíncronos: `PetitionStatusEntity<T>`
+### Manejo de resultados asíncronos: `AsyncState<T>`
 
-Los repositorios devuelven [PetitionStatusEntity<T>](lib/domain/entities/petition_status_entity.dart): un wrapper con `status` (`notStarted` / `loading` / `complete` / `failed`), `data` y `error`. Los errores se muestran traducidos a partir de las claves de [ErrorsConstants](lib/domain/constants/errors_constants.dart).
+Los repositorios devuelven [AsyncState<T>](lib/domain/entities/petition_status_entity.dart): un wrapper con `status` (`notStarted` / `loading` / `complete` / `failed`), `data` y `error`. Los errores se muestran traducidos a partir de las claves de [ErrorsConstants](lib/domain/constants/errors_constants.dart).
 
 ### Widgets de estado de carga
 
-[LoaderScreenWidget<T>](lib/presentation/widgets/loaders_status/loader_screen_widget.dart) recibe un `PetitionStatusEntity<T>` y decide qué dibujar:
+[LoaderScreenWidget<T>](lib/presentation/widgets/loaders_status/loader_screen_widget.dart) recibe un `AsyncState<T>` y decide qué dibujar:
 
 - `loading` → `LoadingWidget`.
-- `complete` sin datos (lista, mapa o `SearchResultEntity` vacíos) y `noResultsScreen: true` → `NoResultsWidget` o `NoResultsSmallWidget` (con `noResultsSmall: true`), o un `customNoResults`.
+- `complete` sin datos (lista, mapa o `SearchResult` vacíos) y `noResultsScreen: true` → `NoResultsWidget` o `NoResultsSmallWidget` (con `noResultsSmall: true`), o un `customNoResults`.
 - `failed`, o sin datos cuando `allowNull` es `false` → `ErrorLoadingWidget` con el error traducido y el botón de reintentar.
 - `complete` con datos → llama a `builder(context, data)`.
 
 `fullSize` controla cómo se centra el estado (`inContainer`, `inExpanded` o `notFullSize`).
-
-### Búsqueda por palabra clave
-
-La API solo combina filtros con Y (`name=rick&species=human`), así que [SearchCharactersUseCase](lib/domain/use_cases/character/search_characters_use_case.dart) arma un `CharacterFilterEntity` por campo y pide la misma página de cada uno en paralelo. Junta los resultados en orden de prioridad (nombre, especie, tipo, estado, género) y descarta un personaje si ya coincide con un filtro anterior; así nadie se repite, ni dentro de una página ni entre páginas. `lastpage` es la mayor de las búsquedas.
 
 ### Caché y conexión
 
@@ -196,7 +191,7 @@ La API solo combina filtros con Y (`name=rick&species=human`), así que [SearchC
 flutter test
 ```
 
-Cubren el `CharacterDto`, el `CharacterRepositoryImpl` contra un `MockClient` de `http` (parámetros de cada filtro, 404 como lista vacía o `characterNotFound`, errores de red y caché), el timeout de `RestApi` con y sin conexión, y la búsqueda por palabra clave sobre el repositorio mock.
+Cubren el `CharacterDto`, el `CharacterRepositoryImpl` contra un `MockClient` de `http` (parámetros `page` y `name`, 404 como lista vacía o `characterNotFound`, errores de red y caché), el timeout de `RestApi` con y sin conexión, y los casos de uso sobre el repositorio mock.
 
 ### Imágenes
 

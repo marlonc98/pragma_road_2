@@ -7,7 +7,7 @@
   "splashPageTitle": "Portal Remoto",
   "versionAndBuild": "Versión {version} ({build})",
   "charactersPageTitle": "Rick and Morty",
-  "charactersSearchHint": "Nombre, especie, tipo o estado",
+  "charactersSearchHint": "Buscar personaje por nombre",
   "charactersEmpty": "No hay personajes para mostrar",
   "charactersNoResults": "Ningún personaje coincide con tu búsqueda",
   "charactersClearSearch": "Limpiar búsqueda",

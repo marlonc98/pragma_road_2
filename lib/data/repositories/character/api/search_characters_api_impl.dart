@@ -4,13 +4,12 @@ import 'package:portal_remoto/data/dtos/character_dto.dart';
 import 'package:portal_remoto/dependency_injection.dart';
 import 'package:portal_remoto/domain/constants/errors_constants.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
-import 'package:portal_remoto/domain/entities/character_filter_entity.dart';
-import 'package:portal_remoto/domain/entities/search_result_entity.dart';
+import 'package:portal_remoto/domain/entities/search_result.dart';
 
-Future<SearchResultEntity<CharacterEntity>> searchCharactersApiImpl({
+Future<SearchResult<CharacterEntity>> searchCharactersApiImpl({
   required int page,
   required int itemsPerPage,
-  required CharacterFilterEntity filter,
+  String? query,
 }) async {
   final String responseText;
   try {
@@ -20,16 +19,12 @@ Future<SearchResultEntity<CharacterEntity>> searchCharactersApiImpl({
           '/character',
           query: {
             'page': '$page',
-            if (filter.name != null) 'name': filter.name!,
-            if (filter.species != null) 'species': filter.species!,
-            if (filter.type != null) 'type': filter.type!,
-            if (filter.status != null) 'status': filter.status!.name,
-            if (filter.gender != null) 'gender': filter.gender!.name,
+            if (query != null && query.isNotEmpty) 'name': query,
           },
         );
   } catch (error) {
     if (error == ErrorsConstants.notFound) {
-      return SearchResultEntity.empty(
+      return SearchResult.empty(
         currentPage: page,
         itemsPerPage: itemsPerPage,
       );
@@ -38,7 +33,7 @@ Future<SearchResultEntity<CharacterEntity>> searchCharactersApiImpl({
   }
   final Map<String, dynamic> json = jsonDecode(responseText);
   final List<dynamic> results = json['results'] ?? [];
-  return SearchResultEntity(
+  return SearchResult(
     currentPage: page,
     totalItems: json['info']?['count'] ?? results.length,
     data: results.map((item) => CharacterDto.fromJSON(item)).toList(),

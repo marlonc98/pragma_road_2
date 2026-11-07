@@ -7,6 +7,6 @@ class GetCharacterByIdUseCase {
 
   GetCharacterByIdUseCase({required this.characterRepository});
 
-  Future<PetitionStatusEntity<CharacterEntity>> getCharacterById(int id) =>
+  Future<AsyncState<CharacterEntity>> getCharacterById(int id) =>
       characterRepository.getCharacterById(id);
 }
