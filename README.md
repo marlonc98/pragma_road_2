@@ -12,7 +12,11 @@ Proyecto construido con **Clean Architecture** (domain / data / presentation), M
 
 ## Capturas
 
-_Pendiente: se agregarán en `docs/screenshots/` cuando existan las primeras pantallas._
+| Personajes | Búsqueda por nombre | Detalle |
+|---|---|---|
+| <img src="docs/screenshots/characters.png" width="240" alt="Cuadrícula de personajes"> | <img src="docs/screenshots/search.png" width="240" alt="Búsqueda de personajes por nombre"> | <img src="docs/screenshots/detail.png" width="240" alt="Detalle de un personaje"> |
+
+Capturas del flavor `dev` (API real) en un iPhone 17 (simulador).
 
 ## Requisitos previos
 
@@ -92,7 +96,7 @@ flowchart TB
         direction TB
         UseCase["UseCases<br/>Load, SearchCharacters, GetCharacterById"]
         RepoI["LocalizationRepository, CharacterRepository<br/>(interfaces abstractas)"]
-        Entities["Entities<br/>CharacterEntity, AsyncState&lt;T&gt;, SearchResult&lt;T&gt;"]
+        Entities["Entities y core<br/>CharacterEntity, AsyncState&lt;T&gt;, SearchResult&lt;T&gt;"]
         UseCase --> RepoI
         UseCase -.->|usa| Entities
     end
@@ -114,7 +118,8 @@ flowchart TB
 ```
 lib/
 ├── domain/              # Reglas de negocio puras, sin Flutter ni detalles de almacenamiento
-│   ├── entities/         # CharacterEntity, AsyncState<T>, SearchResult<T>
+│   ├── core/             # Tipos genéricos: AsyncState<T> y SearchResult<T>
+│   ├── entities/         # CharacterEntity
 │   ├── repositories/     # Contratos abstractos (LocalizationRepository, CharacterRepository)
 │   ├── use_cases/        # Una operación de negocio por clase (load, character/search, character/get_by_id)
 │   ├── states/           # Contrato de estado global (LocalizationState)
@@ -132,9 +137,10 @@ lib/
 │   │   ├── splash/            # Carga traducciones y versión, luego va al listado
 │   │   ├── characters/        # Cuadrícula paginada con búsqueda (+ widgets/character_card_widget.dart)
 │   │   └── character_detail/  # Detalle de un personaje por id (+ widgets/character_info_row_widget.dart)
+│   │       └── core/          # ViewModel base y StfViewModelAdapter (los usan todas las páginas)
 │   ├── widgets/          # Reutilizables: buttons/, images/, inputs/, lists/ y loaders_status/
 │   ├── states/           # Implementación Riverpod de LocalizationState
-│   ├── utils/            # ViewModel base, StfViewModelAdapter, FunctionsHelper (debounce) y textos/colores de estado y género
+│   ├── utils/            # FunctionsHelper (debounce) y textos/colores de estado y género
 │   ├── theme/            # AppTheme (claro y oscuro): colores de fondo, AppBar, tarjetas y buscador
 │   ├── constants/        # TextConstants (claves de traducción)
 │   ├── router.dart       # Rutas con go_router
@@ -160,20 +166,20 @@ test/                           # Tests
 
 ### Patrón de cada pantalla (Page / Screen / ViewModel)
 
-- **`*_page.dart`**: `StatefulWidget` con su `route` estática; solo crea el `ViewModel` vía `StfViewModelAdapter`.
-- **`*_page_view_model.dart`**: extiende `ViewModel<T>` (un `ChangeNotifier` con acceso a `context` y `WidgetRef`), llama a los casos de uso y expone el estado a la UI.
+- **`*_page.dart`**: `StatefulWidget` con su `route` estática; solo crea el `ViewModel` vía [StfViewModelAdapter](lib/presentation/pages/character_detail/core/stf_view_model_adapter.dart).
+- **`*_page_view_model.dart`**: extiende [ViewModel<T>](lib/presentation/pages/character_detail/core/view_model.dart) (un `ChangeNotifier` con acceso a `context` y `WidgetRef`), llama a los casos de uso y expone el estado a la UI.
 - **`*_page_screen.dart`**: widget que recibe el `ViewModel` y solo dibuja UI.
 
 ### Manejo de resultados asíncronos: `AsyncState<T>`
 
-Los repositorios devuelven [AsyncState<T>](lib/domain/entities/petition_status_entity.dart): un wrapper con `status` (`notStarted` / `loading` / `complete` / `failed`), `data` y `error`. Los errores se muestran traducidos a partir de las claves de [ErrorsConstants](lib/domain/constants/errors_constants.dart).
+Los repositorios devuelven [AsyncState<T>](lib/domain/core/async_state.dart): un wrapper con `status` (`notStarted` / `loading` / `complete` / `failed`), `data` y `error`. Los errores se muestran traducidos a partir de las claves de [ErrorsConstants](lib/domain/constants/errors_constants.dart).
 
 ### Widgets de estado de carga
 
 [LoaderScreenWidget<T>](lib/presentation/widgets/loaders_status/loader_screen_widget.dart) recibe un `AsyncState<T>` y decide qué dibujar:
 
 - `loading` → `LoadingWidget`.
-- `complete` sin datos (lista, mapa o `SearchResult` vacíos) y `noResultsScreen: true` → `NoResultsWidget` o `NoResultsSmallWidget` (con `noResultsSmall: true`), o un `customNoResults`.
+- `complete` sin datos (lista, mapa o [SearchResult](lib/domain/core/search_result.dart) vacíos) y `noResultsScreen: true` → `NoResultsWidget` o `NoResultsSmallWidget` (con `noResultsSmall: true`), o un `customNoResults`.
 - `failed`, o sin datos cuando `allowNull` es `false` → `ErrorLoadingWidget` con el error traducido y el botón de reintentar.
 - `complete` con datos → llama a `builder(context, data)`.
 
