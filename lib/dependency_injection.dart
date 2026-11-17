@@ -14,11 +14,10 @@ import 'package:portal_remoto/presentation/states/localization_state_impl.dart';
 
 final di = ProviderContainer();
 
-//#region ------------- apis -------------------------//
+// APIs
 final rickAndMortyApiProvider = Provider<RestApi>((ref) => RickAndMortyApi());
-//#endregion apis
 
-//#region ------------- repositories -------------------------//
+// Repositorios
 final localizationRepositoryProvider = Provider<LocalizationRepository>(
   (ref) => LocalizationRepositoryImpl(),
 );
@@ -28,22 +27,21 @@ final characterRepositoryProvider = Provider<CharacterRepository>(
     Flavor.dev || Flavor.prod => CharacterRepositoryImpl(),
   },
 );
-//#endregion repositories
 
-//#region ------------- States -------------------------//
+// Estados
 final localizationStateProvider =
     NotifierProvider<LocalizationStateImpl, Map<String, String>>(
       LocalizationStateImpl.new,
     );
-//#endregion ---------- States ------------------------//
 
-//#region ------------- use cases -------------------------//
+// Casos de uso
 final loadUseCaseProvider = Provider<LoadUseCase>(
   (ref) => LoadUseCase(
     localizationState: ref.read(localizationStateProvider.notifier),
   ),
 );
-//#region ------------- character -------------------------//
+
+// Casos de uso: personajes
 final searchCharactersUseCaseProvider = Provider<SearchCharactersUseCase>(
   (ref) => SearchCharactersUseCase(
     characterRepository: ref.read(characterRepositoryProvider),
@@ -54,5 +52,3 @@ final getCharacterByIdUseCaseProvider = Provider<GetCharacterByIdUseCase>(
     characterRepository: ref.read(characterRepositoryProvider),
   ),
 );
-//#endregion ---------- character -------------------------//
-//#endregion ---------- use cases -------------------------//
