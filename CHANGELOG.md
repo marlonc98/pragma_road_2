@@ -4,22 +4,32 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ## [Sin publicar]
 
+Cambios por la revisión de la Fase 2.
+
+### Agregado
+- `CHANGELOG.md`, para dejar registro de los cambios.
+- Tests de `RestApi` (respuesta OK, 404, timeout, sin conexión) y de JSON inválido en el repositorio.
+
 ### Cambiado
-- Dependencias de runtime reducidas de 10 a 3: `flutter_riverpod`, `http` y `go_router`.
-- Se quitan `riverpod` (ya viene con `flutter_riverpod`) y `cupertino_icons` (no se usaba).
-- `package_info_plus`: el splash lee la versión de `appBuildName` y `appBuildNumber` de Flutter.
-- `shared_preferences`: la app es solo en español, así que no hay idioma que guardar.
-- `connectivity_plus`: los errores de red salen de capturar `TimeoutException` y `SocketException`. Un wifi sin internet ya no se confunde con una petición lenta.
-- `cached_network_image`: se reemplaza por `Image.network` con `loadingBuilder` y `errorBuilder`.
-- `infinite_scroll_pagination`: se reemplaza por un `ScrollController` en el ViewModel del listado, con reintento al final de la lista.
-- Los repositorios devuelven `Future<T>` y lanzan una clave de error. Los ViewModels guardan el estado en `AsyncValue` de Riverpod. Se eliminan `AsyncState`, `LoaderScreenWidget` y `NoResultsSmallWidget`.
-- `CharacterRepositoryImpl` recibe el `RestApi` por constructor. Se elimina el `ProviderContainer` global (`di`) y los providers usan `ref.watch`.
-- README resumido: qué hace, cómo correrlo, endpoints, estructura, dependencias y limitaciones.
-- `pubspec.yaml` sin los comentarios del template y con descripción del proyecto.
+- Dependencias de runtime de 10 a 3 (`flutter_riverpod`, `http`, `go_router`). Lo que hacían las otras se puede hacer con Flutter o Dart.
+- Errores de red: se capturan `TimeoutException`, `SocketException` y `ClientException` en `RestApi` en vez de usar `connectivity_plus`. Es más preciso: un wifi sin internet ya no pasa como conectado.
+- Imágenes con `Image.network` (`loadingBuilder` y `errorBuilder`) en vez de `cached_network_image`. Flutter ya las guarda en memoria.
+- Paginación con un `ScrollController` en el ViewModel en vez de `infinite_scroll_pagination`. Son unas pocas variables y queda el reintento al final de la lista.
+- La versión del splash sale de `appBuildName` y `appBuildNumber` de Flutter en vez de `package_info_plus`.
+- Estado con `AsyncValue` de Riverpod en vez de mi `AsyncState`. Hacía lo mismo y `AsyncValue` ya trae `.when`.
+- Los errores no se lanzan entre capas: `RestApi`, las funciones de la API, los repositorios y los casos de uso devuelven `AsyncData` o `AsyncError`, y el ViewModel guarda ese valor.
+- `CharacterRepositoryImpl` recibe el `RestApi` por constructor y los providers usan `ref.watch`. Así las dependencias se ven y se pueden sobrescribir en tests.
+- README más corto, con los endpoints y la razón de cada dependencia.
+- `pubspec.yaml` con descripción del proyecto y sin los comentarios del template.
 
 ### Eliminado
-- Carpetas `linux`, `macos`, `windows` y `web`: la app se entrega solo para Android e iOS.
-- Bloques `#region` de `dependency_injection.dart`.
+- `riverpod`: ya viene dentro de `flutter_riverpod`.
+- `cupertino_icons`: no se usaba.
+- `shared_preferences`: solo guardaba el idioma y la app quedó solo en español (la API también responde solo en inglés).
+- `ProviderContainer` global (`di`): escondía las dependencias y no dejaba hacer overrides.
+- `LoaderScreenWidget` y `NoResultsSmallWidget`: con `AsyncValue.when` cada estado usa su widget, y el pequeño repetía al otro.
+- Carpetas `linux`, `macos`, `windows` y `web`: las dejó `flutter create` y la app es solo para Android e iOS.
+- Bloques `#region` de `dependency_injection.dart`: eran ruido.
 
 ## [1.0.0] - 2026-11-07
 
