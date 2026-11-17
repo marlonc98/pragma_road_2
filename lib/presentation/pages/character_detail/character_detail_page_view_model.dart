@@ -14,8 +14,7 @@ class CharacterDetailPageViewModel extends ViewModel<CharacterDetailPage> {
     handleLoadCharacter();
   }
 
-  AsyncState<CharacterEntity> character =
-      AsyncState<CharacterEntity>.loading();
+  AsyncState<CharacterEntity> character = AsyncState<CharacterEntity>.loading();
 
   Future<void> handleLoadCharacter() async {
     character = AsyncState<CharacterEntity>.loading();

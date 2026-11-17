@@ -24,10 +24,7 @@ Future<SearchResult<CharacterEntity>> searchCharactersApiImpl({
         );
   } catch (error) {
     if (error == ErrorsConstants.notFound) {
-      return SearchResult.empty(
-        currentPage: page,
-        itemsPerPage: itemsPerPage,
-      );
+      return SearchResult.empty(currentPage: page, itemsPerPage: itemsPerPage);
     }
     rethrow;
   }

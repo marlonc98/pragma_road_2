@@ -8,7 +8,8 @@ class SearchCharactersUseCase {
 
   SearchCharactersUseCase({required this.characterRepository});
 
-  Future<AsyncState<SearchResult<CharacterEntity>>>
-  searchCharacters({required int page, String? query}) =>
-      characterRepository.searchCharacters(page: page, query: query?.trim());
+  Future<AsyncState<SearchResult<CharacterEntity>>> searchCharacters({
+    required int page,
+    String? query,
+  }) => characterRepository.searchCharacters(page: page, query: query?.trim());
 }

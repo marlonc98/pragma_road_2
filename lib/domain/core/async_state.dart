@@ -7,11 +7,7 @@ class AsyncState<T> {
   T? data;
   String? error;
 
-  AsyncState({
-    this.status = AsyncStatus.loading,
-    this.data,
-    this.error,
-  });
+  AsyncState({this.status = AsyncStatus.loading, this.data, this.error});
 
   AsyncState.notStarted() : status = AsyncStatus.notStarted;
 
@@ -23,10 +19,7 @@ class AsyncState<T> {
     return AsyncState(status: AsyncStatus.loading);
   }
 
-  factory AsyncState.fromError(
-    dynamic error, {
-    String? defaultError,
-  }) {
+  factory AsyncState.fromError(dynamic error, {String? defaultError}) {
     String? errorGetted;
     if (error.toString().contains("Operation timed out") ||
         error.toString().contains("SocketException") ||
@@ -46,10 +39,7 @@ class AsyncState<T> {
         errorGetted = error.toString();
       }
     }
-    return AsyncState(
-      status: AsyncStatus.failed,
-      error: errorGetted,
-    );
+    return AsyncState(status: AsyncStatus.failed, error: errorGetted);
   }
 
   bool get isSuccess => status == AsyncStatus.complete;
@@ -70,11 +60,7 @@ class AsyncState<T> {
     return 'AsyncState{status: $status, data: $data, error: $error}';
   }
 
-  AsyncState<T> copyWith({
-    AsyncStatus? status,
-    T? data,
-    String? error,
-  }) {
+  AsyncState<T> copyWith({AsyncStatus? status, T? data, String? error}) {
     return AsyncState<T>(
       status: status ?? this.status,
       data: data ?? this.data,

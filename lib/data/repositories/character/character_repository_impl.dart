@@ -12,8 +12,10 @@ class CharacterRepositoryImpl extends CharacterRepository {
   final Map<int, CharacterEntity> _cache = {};
 
   @override
-  Future<AsyncState<SearchResult<CharacterEntity>>>
-  searchCharacters({required int page, String? query}) async {
+  Future<AsyncState<SearchResult<CharacterEntity>>> searchCharacters({
+    required int page,
+    String? query,
+  }) async {
     final response = await _run(
       () => searchCharactersApiImpl(
         page: page,

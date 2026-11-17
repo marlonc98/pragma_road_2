@@ -112,8 +112,10 @@ class CharacterRepositoryMock extends CharacterRepository {
   final Duration _delay = const Duration(milliseconds: 400);
 
   @override
-  Future<AsyncState<SearchResult<CharacterEntity>>>
-  searchCharacters({required int page, String? query}) async {
+  Future<AsyncState<SearchResult<CharacterEntity>>> searchCharacters({
+    required int page,
+    String? query,
+  }) async {
     await Future.delayed(_delay);
     final search = query?.toLowerCase() ?? '';
     final characters = _fakeCharacters

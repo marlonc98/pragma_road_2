@@ -13,10 +13,7 @@ class SearchResult<T> {
     required this.lastpage,
   });
 
-  factory SearchResult.empty({
-    int currentPage = 0,
-    int itemsPerPage = 0,
-  }) {
+  factory SearchResult.empty({int currentPage = 0, int itemsPerPage = 0}) {
     return SearchResult(
       currentPage: currentPage,
       totalItems: 0,
