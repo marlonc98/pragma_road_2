@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:portal_remoto/dependency_injection.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
 import 'package:portal_remoto/presentation/constants/text_constants.dart';
@@ -10,6 +9,8 @@ import 'package:portal_remoto/presentation/widgets/inputs/search_bar_widget.dart
 import 'package:portal_remoto/presentation/widgets/loaders_status/error_loading_widget.dart';
 import 'package:portal_remoto/presentation/widgets/loaders_status/loading_widget.dart';
 import 'package:portal_remoto/presentation/widgets/loaders_status/no_results_widget.dart';
+
+typedef _Translate = String Function(String, {Map<String, dynamic>? values});
 
 class CharactersPageScreen extends ConsumerWidget {
   final CharactersPageViewModel vm;
@@ -35,41 +36,14 @@ class CharactersPageScreen extends ConsumerWidget {
               ),
             ),
             Expanded(
-              child: RefreshIndicator(
-                onRefresh: vm.handleReload,
-                child: PagingListener<int, CharacterEntity>(
-                  controller: vm.pagingController,
-                  builder: (context, state, fetchNextPage) =>
-                      PagedGridView<int, CharacterEntity>(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                        state: state,
-                        fetchNextPage: fetchNextPage,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 16,
-                              mainAxisExtent: CharacterCardWidget.height,
-                            ),
-                        builderDelegate:
-                            PagedChildBuilderDelegate<CharacterEntity>(
-                              itemBuilder: (context, character, index) =>
-                                  CharacterCardWidget(
-                                    character: character,
-                                    onTap: () =>
-                                        vm.handleOpenCharacter(character),
-                                  ),
-                              firstPageProgressIndicatorBuilder: (context) =>
-                                  const LoadingWidget(),
-                              firstPageErrorIndicatorBuilder: (context) =>
-                                  ErrorLoadingWidget(
-                                    onRetry: vm.handleReload,
-                                    error: state.error?.toString(),
-                                  ),
-                              noItemsFoundIndicatorBuilder: (context) =>
-                                  _buildEmpty(i18n),
-                            ),
-                      ),
+              child: vm.characters.when(
+                data: (characters) => characters.isEmpty
+                    ? _buildEmpty(i18n)
+                    : _buildGrid(i18n, characters),
+                loading: () => const LoadingWidget(),
+                error: (error, _) => ErrorLoadingWidget(
+                  error: i18n(error.toString()),
+                  onRetry: vm.handleReload,
                 ),
               ),
             ),
@@ -79,9 +53,53 @@ class CharactersPageScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmpty(
-    String Function(String, {Map<String, dynamic>? values}) i18n,
-  ) {
+  Widget _buildGrid(_Translate i18n, List<CharacterEntity> characters) {
+    return RefreshIndicator(
+      onRefresh: vm.handleReload,
+      child: CustomScrollView(
+        controller: vm.scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            sliver: SliverGrid.builder(
+              itemCount: characters.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                mainAxisExtent: CharacterCardWidget.height,
+              ),
+              itemBuilder: (context, index) => CharacterCardWidget(
+                character: characters[index],
+                onTap: () => vm.handleOpenCharacter(characters[index]),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(child: _buildFooter(i18n)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooter(_Translate i18n) {
+    if (vm.loadMoreError != null) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 24),
+        child: ErrorLoadingWidget(
+          error: i18n(vm.loadMoreError.toString()),
+          onRetry: vm.handleLoadNextPage,
+        ),
+      );
+    }
+    if (!vm.hasMorePages) return const SizedBox(height: 24);
+    return const Padding(
+      padding: EdgeInsets.only(bottom: 32),
+      child: Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  Widget _buildEmpty(_Translate i18n) {
     final isSearching = vm.query.isNotEmpty;
     return NoResultsWidget(
       message: i18n(

@@ -1,6 +1,5 @@
 import 'package:portal_remoto/domain/constants/errors_constants.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
-import 'package:portal_remoto/domain/core/async_state.dart';
 import 'package:portal_remoto/domain/core/search_result.dart';
 import 'package:portal_remoto/domain/repositories/character_repository.dart';
 
@@ -112,7 +111,7 @@ class CharacterRepositoryMock extends CharacterRepository {
   final Duration _delay = const Duration(milliseconds: 400);
 
   @override
-  Future<AsyncState<SearchResult<CharacterEntity>>> searchCharacters({
+  Future<SearchResult<CharacterEntity>> searchCharacters({
     required int page,
     String? query,
   }) async {
@@ -121,27 +120,24 @@ class CharacterRepositoryMock extends CharacterRepository {
     final characters = _fakeCharacters
         .where((character) => character.name.toLowerCase().contains(search))
         .toList();
-    return AsyncState.success(
-      data: SearchResult(
-        currentPage: page,
-        totalItems: characters.length,
-        data: characters
-            .skip((page - 1) * itemsPerPage)
-            .take(itemsPerPage)
-            .toList(),
-        itemsPerPage: itemsPerPage,
-        lastpage: (characters.length / itemsPerPage).ceil(),
-      ),
+    return SearchResult(
+      currentPage: page,
+      totalItems: characters.length,
+      data: characters
+          .skip((page - 1) * itemsPerPage)
+          .take(itemsPerPage)
+          .toList(),
+      itemsPerPage: itemsPerPage,
+      lastpage: (characters.length / itemsPerPage).ceil(),
     );
   }
 
   @override
-  Future<AsyncState<CharacterEntity>> getCharacterById(int id) async {
+  Future<CharacterEntity> getCharacterById(int id) async {
     await Future.delayed(_delay);
-    final index = _fakeCharacters.indexWhere((element) => element.id == id);
-    if (index == -1) {
-      return AsyncState.fromError(ErrorsConstants.characterNotFound);
-    }
-    return AsyncState.success(data: _fakeCharacters[index]);
+    return _fakeCharacters.firstWhere(
+      (character) => character.id == id,
+      orElse: () => throw ErrorsConstants.characterNotFound,
+    );
   }
 }

@@ -1,59 +1,108 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:portal_remoto/dependency_injection.dart';
-import 'package:portal_remoto/domain/constants/errors_constants.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
 import 'package:portal_remoto/presentation/pages/character_detail/character_detail_page.dart';
+import 'package:portal_remoto/presentation/pages/character_detail/core/view_model.dart';
 import 'package:portal_remoto/presentation/pages/characters/characters_page.dart';
 import 'package:portal_remoto/presentation/utils/functions_helper.dart';
-import 'package:portal_remoto/presentation/pages/character_detail/core/view_model.dart';
 
 class CharactersPageViewModel extends ViewModel<CharactersPage> {
+  /// Distancia al final de la lista a la que se pide la siguiente página.
+  static const double loadMoreThreshold = 400;
+
   CharactersPageViewModel({
     required super.context,
     required super.widget,
     required super.ref,
     required super.isMounted,
-  });
+  }) {
+    scrollController.addListener(_handleScroll);
+    handleReload();
+  }
 
   final TextEditingController searchController = TextEditingController();
+  final ScrollController scrollController = ScrollController();
   Timer? _searchDebounce;
+
+  /// Primera página: loading, error o la lista acumulada.
+  AsyncValue<List<CharacterEntity>> characters = const AsyncLoading();
+
+  /// Estado de las páginas siguientes, que se muestra al final de la lista.
+  bool isLoadingMore = false;
+  Object? loadMoreError;
+
+  int _page = 1;
   int _lastPage = 1;
 
-  late final PagingController<int, CharacterEntity> pagingController =
-      PagingController(getNextPageKey: _getNextPageKey, fetchPage: _fetchPage);
+  /// Cambia en cada búsqueda nueva para descartar respuestas que ya no aplican.
+  int _request = 0;
 
   String get query => searchController.text.trim();
 
+  bool get hasMorePages => _page < _lastPage;
+
   Future<void> handleReload() async {
-    pagingController.refresh();
+    final request = ++_request;
+    _page = 1;
+    isLoadingMore = false;
+    loadMoreError = null;
+    if (!characters.hasValue) {
+      characters = const AsyncLoading();
+      notifyListeners();
+    }
+    final result = await AsyncValue.guard(() => _fetch(1, request));
+    if (!mounted || request != _request) return;
+    characters = result;
+    notifyListeners();
   }
 
-  int? _getNextPageKey(PagingState<int, CharacterEntity> state) {
-    final lastLoadedPage = state.keys?.lastOrNull;
-    if (lastLoadedPage != null && lastLoadedPage >= _lastPage) return null;
-    return state.nextIntPageKey;
+  Future<void> handleLoadNextPage() async {
+    final current = characters.value;
+    if (current == null || isLoadingMore || !hasMorePages) return;
+    final request = _request;
+    isLoadingMore = true;
+    loadMoreError = null;
+    notifyListeners();
+    try {
+      final next = await _fetch(_page + 1, request);
+      if (!mounted || request != _request) return;
+      _page++;
+      characters = AsyncData([...current, ...next]);
+    } catch (error) {
+      if (!mounted || request != _request) return;
+      loadMoreError = error;
+    }
+    isLoadingMore = false;
+    notifyListeners();
   }
 
-  Future<List<CharacterEntity>> _fetchPage(int page) async {
-    final response = await ref
+  Future<List<CharacterEntity>> _fetch(int page, int request) async {
+    final result = await ref
         .read(searchCharactersUseCaseProvider)
         .searchCharacters(page: page, query: query);
-    if (!response.isSuccess) {
-      final i18n = ref.read(localizationStateProvider.notifier).translate;
-      throw i18n(response.error ?? ErrorsConstants.errorGettingCharacters);
+    if (request == _request) _lastPage = result.lastpage;
+    return result.data;
+  }
+
+  void _handleScroll() {
+    final position = scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - loadMoreThreshold &&
+        loadMoreError == null) {
+      handleLoadNextPage();
     }
-    _lastPage = response.data?.lastpage ?? page;
-    return response.data?.data ?? [];
   }
 
   void handleSearchChanged(String _) {
     notifyListeners();
     _searchDebounce = FunctionsHelper.resetSearch(
-      searchFunction: handleReload,
+      searchFunction: () {
+        characters = const AsyncLoading();
+        handleReload();
+      },
       timer: _searchDebounce,
     );
   }
@@ -71,7 +120,7 @@ class CharactersPageViewModel extends ViewModel<CharactersPage> {
   @override
   void dispose() {
     _searchDebounce?.cancel();
-    pagingController.dispose();
+    scrollController.dispose();
     searchController.dispose();
     super.dispose();
   }

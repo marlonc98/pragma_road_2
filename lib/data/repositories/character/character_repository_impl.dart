@@ -2,7 +2,6 @@ import 'package:portal_remoto/data/repositories/character/api/get_character_by_i
 import 'package:portal_remoto/data/repositories/character/api/search_characters_api_impl.dart';
 import 'package:portal_remoto/domain/constants/errors_constants.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
-import 'package:portal_remoto/domain/core/async_state.dart';
 import 'package:portal_remoto/domain/core/search_result.dart';
 import 'package:portal_remoto/domain/repositories/character_repository.dart';
 
@@ -12,11 +11,11 @@ class CharacterRepositoryImpl extends CharacterRepository {
   final Map<int, CharacterEntity> _cache = {};
 
   @override
-  Future<AsyncState<SearchResult<CharacterEntity>>> searchCharacters({
+  Future<SearchResult<CharacterEntity>> searchCharacters({
     required int page,
     String? query,
   }) async {
-    final response = await _run(
+    final result = await _run(
       () => searchCharactersApiImpl(
         page: page,
         itemsPerPage: itemsPerPage,
@@ -24,32 +23,34 @@ class CharacterRepositoryImpl extends CharacterRepository {
       ),
       defaultError: ErrorsConstants.errorGettingCharacters,
     );
-    for (final character in response.data?.data ?? <CharacterEntity>[]) {
+    for (final character in result.data) {
       _cache[character.id] = character;
     }
-    return response;
+    return result;
   }
 
   @override
-  Future<AsyncState<CharacterEntity>> getCharacterById(int id) async {
+  Future<CharacterEntity> getCharacterById(int id) async {
     final cached = _cache[id];
-    if (cached != null) return AsyncState.success(data: cached);
-    final response = await _run(
+    if (cached != null) return cached;
+    final character = await _run(
       () => getCharacterByIdApiImpl(id),
       defaultError: ErrorsConstants.errorGettingCharacter,
     );
-    if (response.data != null) _cache[id] = response.data!;
-    return response;
+    return _cache[id] = character;
   }
 
-  Future<AsyncState<T>> _run<T>(
+  /// Deja pasar las claves de [ErrorsConstants] y cambia cualquier otro error
+  /// (JSON inválido, HTTP 500…) por [defaultError].
+  Future<T> _run<T>(
     Future<T> Function() call, {
-    String? defaultError,
+    required String defaultError,
   }) async {
     try {
-      return AsyncState.success(data: await call());
+      return await call();
     } catch (error) {
-      return AsyncState.fromError(error, defaultError: defaultError);
+      if (error is String && ErrorsConstants.existsKey(error)) rethrow;
+      throw defaultError;
     }
   }
 }

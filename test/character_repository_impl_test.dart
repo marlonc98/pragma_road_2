@@ -41,10 +41,9 @@ void main() {
 
     expect(requested.path, '/api/character');
     expect(requested.queryParameters, {'page': '2', 'name': 'rick'});
-    expect(response.isSuccess, isTrue);
-    expect(response.data!.data.single.name, 'Rick Sanchez');
-    expect(response.data!.totalItems, 25);
-    expect(response.data!.lastpage, 2);
+    expect(response.data.single.name, 'Rick Sanchez');
+    expect(response.totalItems, 25);
+    expect(response.lastpage, 2);
   });
 
   test('sin texto de búsqueda no manda el parámetro name', () async {
@@ -63,31 +62,31 @@ void main() {
       () => repository.searchCharacters(page: 1, query: 'zzz'),
     );
 
-    expect(response.isSuccess, isTrue);
-    expect(response.data!.isEmpty, isTrue);
-    expect(response.data!.lastpage, 0);
+    expect(response.isEmpty, isTrue);
+    expect(response.lastpage, 0);
   });
 
   test(
     'un error del servidor en la búsqueda usa el error por defecto',
     () async {
-      final response = await withServer(
-        (_) async => http.Response('', 500),
-        () => repository.searchCharacters(page: 1),
+      await expectLater(
+        withServer(
+          (_) async => http.Response('', 500),
+          () => repository.searchCharacters(page: 1),
+        ),
+        throwsA(ErrorsConstants.errorGettingCharacters),
       );
-
-      expect(response.isError, isTrue);
-      expect(response.error, ErrorsConstants.errorGettingCharacters);
     },
   );
 
-  test('sin conexión devuelve noInternet', () async {
-    final response = await withServer(
-      (_) async => throw http.ClientException('Failed host lookup'),
-      () => repository.searchCharacters(page: 1),
+  test('sin conexión lanza noInternet', () async {
+    await expectLater(
+      withServer(
+        (_) async => throw http.ClientException('Failed host lookup'),
+        () => repository.searchCharacters(page: 1),
+      ),
+      throwsA(ErrorsConstants.noInternet),
     );
-
-    expect(response.error, ErrorsConstants.noInternet);
   });
 
   test('obtiene un personaje por id', () async {
@@ -98,17 +97,17 @@ void main() {
     }, () => repository.getCharacterById(2));
 
     expect(requested.path, '/api/character/2');
-    expect(response.data!.name, 'Morty Smith');
+    expect(response.name, 'Morty Smith');
   });
 
   test('un id que no existe da characterNotFound', () async {
-    final response = await withServer(
-      (_) async => http.Response('{"error":"Character not found"}', 404),
-      () => repository.getCharacterById(99999),
+    await expectLater(
+      withServer(
+        (_) async => http.Response('{"error":"Character not found"}', 404),
+        () => repository.getCharacterById(99999),
+      ),
+      throwsA(ErrorsConstants.characterNotFound),
     );
-
-    expect(response.isError, isTrue);
-    expect(response.error, ErrorsConstants.characterNotFound);
   });
 
   test(
@@ -132,7 +131,7 @@ void main() {
       });
 
       expect(requests, 1);
-      expect(response.data!.name, 'Rick Sanchez');
+      expect(response.name, 'Rick Sanchez');
     },
   );
 

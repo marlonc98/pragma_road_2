@@ -8,7 +8,8 @@ import 'package:portal_remoto/presentation/pages/character_detail/character_deta
 import 'package:portal_remoto/presentation/pages/character_detail/widgets/character_info_row_widget.dart';
 import 'package:portal_remoto/presentation/utils/character_labels.dart';
 import 'package:portal_remoto/presentation/widgets/images/image_network_with_load_widget.dart';
-import 'package:portal_remoto/presentation/widgets/loaders_status/loader_screen_widget.dart';
+import 'package:portal_remoto/presentation/widgets/loaders_status/error_loading_widget.dart';
+import 'package:portal_remoto/presentation/widgets/loaders_status/loading_widget.dart';
 
 typedef _Translate = String Function(String, {Map<String, dynamic>? values});
 
@@ -20,7 +21,7 @@ class CharacterDetailPageScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(localizationStateProvider);
     final i18n = ref.read(localizationStateProvider.notifier).translate;
-    final overImage = vm.character.isSuccess;
+    final overImage = vm.character.hasValue;
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -28,11 +29,13 @@ class CharacterDetailPageScreen extends ConsumerWidget {
         foregroundColor: overImage ? Colors.white : null,
         systemOverlayStyle: overImage ? SystemUiOverlayStyle.light : null,
       ),
-      body: LoaderScreenWidget<CharacterEntity>(
-        status: vm.character,
-        onRetry: vm.handleLoadCharacter,
-        builder: (context, character) =>
-            _buildCharacter(context, i18n, character),
+      body: vm.character.when(
+        data: (character) => _buildCharacter(context, i18n, character),
+        loading: () => const LoadingWidget(),
+        error: (error, _) => ErrorLoadingWidget(
+          error: i18n(error.toString()),
+          onRetry: vm.handleLoadCharacter,
+        ),
       ),
     );
   }

@@ -1,6 +1,6 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:portal_remoto/dependency_injection.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
-import 'package:portal_remoto/domain/core/async_state.dart';
 import 'package:portal_remoto/presentation/pages/character_detail/character_detail_page.dart';
 import 'package:portal_remoto/presentation/pages/character_detail/core/view_model.dart';
 
@@ -14,16 +14,17 @@ class CharacterDetailPageViewModel extends ViewModel<CharacterDetailPage> {
     handleLoadCharacter();
   }
 
-  AsyncState<CharacterEntity> character = AsyncState<CharacterEntity>.loading();
+  AsyncValue<CharacterEntity> character = const AsyncLoading();
 
   Future<void> handleLoadCharacter() async {
-    character = AsyncState<CharacterEntity>.loading();
+    character = const AsyncLoading();
     notifyListeners();
-    final response = await ref
-        .read(getCharacterByIdUseCaseProvider)
-        .getCharacterById(widget.id);
+    final result = await AsyncValue.guard(
+      () =>
+          ref.read(getCharacterByIdUseCaseProvider).getCharacterById(widget.id),
+    );
     if (!mounted) return;
-    character = response;
+    character = result;
     notifyListeners();
   }
 }
