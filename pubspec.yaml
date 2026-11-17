@@ -2,7 +2,7 @@ name: portal_remoto
 description: "Busca personajes de Rick and Morty por nombre y muestra su detalle usando la Rick and Morty API."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: ^3.13.4

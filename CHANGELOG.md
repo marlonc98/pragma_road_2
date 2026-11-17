@@ -2,7 +2,7 @@
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
-## [Sin publicar]
+## [1.1.0] - 2026-11-17
 
 Cambios por la revisión de la Fase 2.
 
