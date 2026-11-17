@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:portal_remoto/dependency_injection.dart';
 import 'package:portal_remoto/presentation/constants/text_constants.dart';
@@ -31,15 +32,15 @@ class SplashPageScreen extends ConsumerWidget {
               ),
               const CircularProgressIndicator(color: Colors.white),
               const SizedBox(height: 4),
-              if (vm.packageInfo != null)
+              if (appBuildName != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 32),
                   child: Text(
                     i18n(
                       TextConstants.versionAndBuild,
                       values: {
-                        "version": vm.packageInfo!.version,
-                        "build": vm.packageInfo!.buildNumber,
+                        "version": appBuildName,
+                        "build": appBuildNumber ?? "",
                       },
                     ),
                     style: Theme.of(context).textTheme.bodyMedium

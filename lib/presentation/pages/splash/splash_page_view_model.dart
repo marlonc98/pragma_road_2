@@ -3,7 +3,6 @@ import 'package:portal_remoto/dependency_injection.dart';
 import 'package:portal_remoto/presentation/pages/characters/characters_page.dart';
 import 'package:portal_remoto/presentation/pages/splash/splash_page.dart';
 import 'package:portal_remoto/presentation/pages/character_detail/core/view_model.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 class SplashPageViewModel extends ViewModel<SplashPage> {
   SplashPageViewModel({
@@ -12,15 +11,7 @@ class SplashPageViewModel extends ViewModel<SplashPage> {
     required super.ref,
     required super.isMounted,
   }) {
-    _loadVersionAndBuildNumber();
     _load();
-  }
-
-  PackageInfo? packageInfo;
-
-  Future<void> _loadVersionAndBuildNumber() async {
-    packageInfo = await PackageInfo.fromPlatform();
-    notifyListeners();
   }
 
   Future<void> _load() async {
