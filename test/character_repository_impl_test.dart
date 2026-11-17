@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:portal_remoto/data/repositories/character/character_repository_impl.dart';
+import 'package:portal_remoto/data/settings/rick_and_morty_api.dart';
 import 'package:portal_remoto/domain/constants/errors_constants.dart';
 
 Map<String, dynamic> characterJson(int id, String name) => {
@@ -24,7 +25,7 @@ Future<T> withServer<T>(
 void main() {
   late CharacterRepositoryImpl repository;
 
-  setUp(() => repository = CharacterRepositoryImpl());
+  setUp(() => repository = CharacterRepositoryImpl(RickAndMortyApi()));
 
   test('busca por nombre y página y arma el SearchResult', () async {
     late Uri requested;

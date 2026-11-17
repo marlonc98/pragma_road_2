@@ -12,8 +12,6 @@ import 'package:portal_remoto/domain/use_cases/load_use_case.dart';
 import 'package:portal_remoto/flavors/flavors.dart';
 import 'package:portal_remoto/presentation/states/localization_state_impl.dart';
 
-final di = ProviderContainer();
-
 // APIs
 final rickAndMortyApiProvider = Provider<RestApi>((ref) => RickAndMortyApi());
 
@@ -24,7 +22,8 @@ final localizationRepositoryProvider = Provider<LocalizationRepository>(
 final characterRepositoryProvider = Provider<CharacterRepository>(
   (ref) => switch (F.appFlavor) {
     Flavor.mock => CharacterRepositoryMock(),
-    Flavor.dev || Flavor.prod => CharacterRepositoryImpl(),
+    Flavor.dev ||
+    Flavor.prod => CharacterRepositoryImpl(ref.watch(rickAndMortyApiProvider)),
   },
 );
 
@@ -37,18 +36,18 @@ final localizationStateProvider =
 // Casos de uso
 final loadUseCaseProvider = Provider<LoadUseCase>(
   (ref) => LoadUseCase(
-    localizationState: ref.read(localizationStateProvider.notifier),
+    localizationState: ref.watch(localizationStateProvider.notifier),
   ),
 );
 
 // Casos de uso: personajes
 final searchCharactersUseCaseProvider = Provider<SearchCharactersUseCase>(
   (ref) => SearchCharactersUseCase(
-    characterRepository: ref.read(characterRepositoryProvider),
+    characterRepository: ref.watch(characterRepositoryProvider),
   ),
 );
 final getCharacterByIdUseCaseProvider = Provider<GetCharacterByIdUseCase>(
   (ref) => GetCharacterByIdUseCase(
-    characterRepository: ref.read(characterRepositoryProvider),
+    characterRepository: ref.watch(characterRepositoryProvider),
   ),
 );
