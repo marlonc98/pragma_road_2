@@ -49,7 +49,7 @@ lib/
 └── main.dart
 ```
 
-`domain` no depende de las otras capas. Los repositorios reciben el `RestApi` por constructor y los providers se arman con `ref.watch`, así que en un test se pueden sobrescribir con `ProviderScope(overrides: [...])`. Los textos están en `assets/translate_dictionaries/es.json`.
+`domain` no depende de las otras capas. Ninguna capa lanza errores: cada una devuelve un `AsyncValue` (`AsyncData` o `AsyncError` con una clave de `ErrorsConstants`) y la de arriba lo pasa tal cual. Los repositorios reciben el `RestApi` por constructor y los providers se arman con `ref.watch`, así que en un test se pueden sobrescribir con `ProviderScope(overrides: [...])`. Los textos están en `assets/translate_dictionaries/es.json`.
 
 ## Dependencias
 

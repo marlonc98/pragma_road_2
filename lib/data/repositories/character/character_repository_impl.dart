@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:portal_remoto/data/repositories/character/api/get_character_by_id_api_impl.dart';
 import 'package:portal_remoto/data/repositories/character/api/search_characters_api_impl.dart';
 import 'package:portal_remoto/data/settings/rest_api.dart';
@@ -15,47 +16,43 @@ class CharacterRepositoryImpl extends CharacterRepository {
   CharacterRepositoryImpl(this.api);
 
   @override
-  Future<SearchResult<CharacterEntity>> searchCharacters({
+  Future<AsyncValue<SearchResult<CharacterEntity>>> searchCharacters({
     required int page,
     String? query,
   }) async {
-    final result = await _run(
-      () => searchCharactersApiImpl(
-        api,
-        page: page,
-        itemsPerPage: itemsPerPage,
-        query: query,
-      ),
-      defaultError: ErrorsConstants.errorGettingCharacters,
+    final result = await searchCharactersApiImpl(
+      api,
+      page: page,
+      itemsPerPage: itemsPerPage,
+      query: query,
     );
-    for (final character in result.data) {
-      _cache[character.id] = character;
+    if (result case AsyncData(:final value)) {
+      for (final character in value.data) {
+        _cache[character.id] = character;
+      }
     }
-    return result;
+    return _withDefaultError(result, ErrorsConstants.errorGettingCharacters);
   }
 
   @override
-  Future<CharacterEntity> getCharacterById(int id) async {
+  Future<AsyncValue<CharacterEntity>> getCharacterById(int id) async {
     final cached = _cache[id];
-    if (cached != null) return cached;
-    final character = await _run(
-      () => getCharacterByIdApiImpl(api, id),
-      defaultError: ErrorsConstants.errorGettingCharacter,
-    );
-    return _cache[id] = character;
+    if (cached != null) return AsyncData(cached);
+    final result = await getCharacterByIdApiImpl(api, id);
+    if (result case AsyncData(:final value)) _cache[id] = value;
+    return _withDefaultError(result, ErrorsConstants.errorGettingCharacter);
   }
 
   /// Deja pasar las claves de [ErrorsConstants] y cambia cualquier otro error
   /// (JSON inválido, HTTP 500…) por [defaultError].
-  Future<T> _run<T>(
-    Future<T> Function() call, {
-    required String defaultError,
-  }) async {
-    try {
-      return await call();
-    } catch (error) {
-      if (error is String && ErrorsConstants.existsKey(error)) rethrow;
-      throw defaultError;
+  AsyncValue<T> _withDefaultError<T>(
+    AsyncValue<T> result,
+    String defaultError,
+  ) {
+    if (result case AsyncError(:final error, :final stackTrace)
+        when !(error is String && ErrorsConstants.existsKey(error))) {
+      return AsyncError(defaultError, stackTrace);
     }
+    return result;
   }
 }

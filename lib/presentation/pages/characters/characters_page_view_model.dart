@@ -54,7 +54,7 @@ class CharactersPageViewModel extends ViewModel<CharactersPage> {
       characters = const AsyncLoading();
       notifyListeners();
     }
-    final result = await AsyncValue.guard(() => _fetch(1, request));
+    final result = await _fetch(1, request);
     if (!mounted || request != _request) return;
     characters = result;
     notifyListeners();
@@ -67,25 +67,29 @@ class CharactersPageViewModel extends ViewModel<CharactersPage> {
     isLoadingMore = true;
     loadMoreError = null;
     notifyListeners();
-    try {
-      final next = await _fetch(_page + 1, request);
-      if (!mounted || request != _request) return;
+    final next = await _fetch(_page + 1, request);
+    if (!mounted || request != _request) return;
+    if (next case AsyncData(:final value)) {
       _page++;
-      characters = AsyncData([...current, ...next]);
-    } catch (error) {
-      if (!mounted || request != _request) return;
-      loadMoreError = error;
+      characters = AsyncData([...current, ...value]);
+    } else {
+      loadMoreError = next.error;
     }
     isLoadingMore = false;
     notifyListeners();
   }
 
-  Future<List<CharacterEntity>> _fetch(int page, int request) async {
+  Future<AsyncValue<List<CharacterEntity>>> _fetch(
+    int page,
+    int request,
+  ) async {
     final result = await ref
         .read(searchCharactersUseCaseProvider)
         .searchCharacters(page: page, query: query);
-    if (request == _request) _lastPage = result.lastpage;
-    return result.data;
+    if (result case AsyncData(:final value) when request == _request) {
+      _lastPage = value.lastpage;
+    }
+    return result.whenData((value) => value.data);
   }
 
   void _handleScroll() {

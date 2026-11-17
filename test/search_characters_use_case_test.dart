@@ -15,12 +15,15 @@ void main() {
       page: 1,
       query: '  rick sanchez  ',
     );
-    expect(response.data.map((character) => character.name), ['Rick Sanchez']);
+    expect(response.requireValue.data.map((character) => character.name), [
+      'Rick Sanchez',
+    ]);
   });
 
   test('pagina los resultados de 20 en 20', () async {
-    final first = await searchUseCase.searchCharacters(page: 1);
-    final last = await searchUseCase.searchCharacters(page: first.lastpage);
+    final first = (await searchUseCase.searchCharacters(page: 1)).requireValue;
+    final last = (await searchUseCase.searchCharacters(page: first.lastpage))
+        .requireValue;
 
     expect(first.data, hasLength(CharacterRepositoryMock.itemsPerPage));
     expect(first.lastpage, 3);
@@ -32,9 +35,7 @@ void main() {
 
   test('un id que no existe da characterNotFound', () async {
     final useCase = GetCharacterByIdUseCase(characterRepository: repository);
-    await expectLater(
-      useCase.getCharacterById(-1),
-      throwsA(ErrorsConstants.characterNotFound),
-    );
+    final response = await useCase.getCharacterById(-1);
+    expect(response.error, ErrorsConstants.characterNotFound);
   });
 }

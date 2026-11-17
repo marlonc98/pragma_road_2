@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:portal_remoto/domain/constants/errors_constants.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
 import 'package:portal_remoto/domain/core/search_result.dart';
@@ -111,7 +112,7 @@ class CharacterRepositoryMock extends CharacterRepository {
   final Duration _delay = const Duration(milliseconds: 400);
 
   @override
-  Future<SearchResult<CharacterEntity>> searchCharacters({
+  Future<AsyncValue<SearchResult<CharacterEntity>>> searchCharacters({
     required int page,
     String? query,
   }) async {
@@ -120,24 +121,26 @@ class CharacterRepositoryMock extends CharacterRepository {
     final characters = _fakeCharacters
         .where((character) => character.name.toLowerCase().contains(search))
         .toList();
-    return SearchResult(
-      currentPage: page,
-      totalItems: characters.length,
-      data: characters
-          .skip((page - 1) * itemsPerPage)
-          .take(itemsPerPage)
-          .toList(),
-      itemsPerPage: itemsPerPage,
-      lastpage: (characters.length / itemsPerPage).ceil(),
+    return AsyncData(
+      SearchResult(
+        currentPage: page,
+        totalItems: characters.length,
+        data: characters
+            .skip((page - 1) * itemsPerPage)
+            .take(itemsPerPage)
+            .toList(),
+        itemsPerPage: itemsPerPage,
+        lastpage: (characters.length / itemsPerPage).ceil(),
+      ),
     );
   }
 
   @override
-  Future<CharacterEntity> getCharacterById(int id) async {
+  Future<AsyncValue<CharacterEntity>> getCharacterById(int id) async {
     await Future.delayed(_delay);
-    return _fakeCharacters.firstWhere(
-      (character) => character.id == id,
-      orElse: () => throw ErrorsConstants.characterNotFound,
-    );
+    for (final character in _fakeCharacters) {
+      if (character.id == id) return AsyncData(character);
+    }
+    return AsyncError(ErrorsConstants.characterNotFound, StackTrace.current);
   }
 }

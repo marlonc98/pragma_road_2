@@ -1,12 +1,14 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:portal_remoto/domain/core/search_result.dart';
 import 'package:portal_remoto/domain/entities/character_entity.dart';
 
-/// Los métodos lanzan una clave de [ErrorsConstants] cuando fallan.
+/// Los métodos no lanzan: si fallan devuelven [AsyncError] con una clave de
+/// [ErrorsConstants].
 abstract class CharacterRepository {
-  Future<SearchResult<CharacterEntity>> searchCharacters({
+  Future<AsyncValue<SearchResult<CharacterEntity>>> searchCharacters({
     required int page,
     String? query,
   });
 
-  Future<CharacterEntity> getCharacterById(int id);
+  Future<AsyncValue<CharacterEntity>> getCharacterById(int id);
 }

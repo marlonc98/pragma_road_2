@@ -19,10 +19,9 @@ class CharacterDetailPageViewModel extends ViewModel<CharacterDetailPage> {
   Future<void> handleLoadCharacter() async {
     character = const AsyncLoading();
     notifyListeners();
-    final result = await AsyncValue.guard(
-      () =>
-          ref.read(getCharacterByIdUseCaseProvider).getCharacterById(widget.id),
-    );
+    final result = await ref
+        .read(getCharacterByIdUseCaseProvider)
+        .getCharacterById(widget.id);
     if (!mounted) return;
     character = result;
     notifyListeners();

@@ -12,16 +12,25 @@ final api = RestApi(
 );
 
 Future<Object?> errorOf(Future<http.Response> Function() respond) =>
-    http.runWithClient(() async {
-      try {
-        await api.get('/character');
-        return null;
-      } catch (error) {
-        return error;
-      }
-    }, () => MockClient((_) => respond()));
+    http.runWithClient(
+      () async => (await api.get('/character')).error,
+      () => MockClient((_) => respond()),
+    );
 
 void main() {
+  test('una respuesta 2xx devuelve el cuerpo', () async {
+    final response = await http.runWithClient(
+      () => api.get('/character'),
+      () => MockClient((_) async => http.Response('{"ok":true}', 200)),
+    );
+    expect(response.requireValue, '{"ok":true}');
+  });
+
+  test('un 404 es notFound', () async {
+    final error = await errorOf(() async => http.Response('', 404));
+    expect(error, ErrorsConstants.notFound);
+  });
+
   test('si se vence el tiempo es timeout', () async {
     final error = await errorOf(() async {
       await Future.delayed(const Duration(milliseconds: 200));
