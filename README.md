@@ -1,238 +1,69 @@
 # Portal Remoto
 
-App Flutter para **buscar personajes de Rick and Morty** y ver su detalle, usando la API pública [rickandmortyapi.com](https://rickandmortyapi.com/documentation).
+App Flutter (Android e iOS) para **buscar personajes de Rick and Morty por nombre** y ver su detalle, usando la [Rick and Morty API](https://rickandmortyapi.com/documentation).
 
-## ¿Qué hace?
+- **Listado**: cuadrícula con scroll infinito (20 por página), búsqueda por nombre con *debounce* de 500 ms, *pull to refresh* y estados de carga, error y sin resultados.
+- **Detalle**: imagen, estado, especie, tipo, género, origen, última ubicación e ID.
 
-- **Splash**: carga las traducciones y la versión de la app, y luego navega al listado.
-- **Personajes**: cuadrícula de 2 columnas con tarjetas (imagen, nombre, estado, especie y última ubicación), scroll infinito (20 por página), búsqueda por nombre con *debounce* (`FunctionsHelper.resetSearch`, 500 ms), *pull to refresh* y estados de carga, error y sin resultados.
-- **Detalle**: imagen a todo el ancho con el nombre encima, estado, una tarjeta con especie, tipo, género, origen, última ubicación e ID, y un resumen del personaje.
-
-Proyecto construido con **Clean Architecture** (domain / data / presentation), MVVM en la capa de presentación, **Riverpod** para estado global e inyección de dependencias, **go_router** para la navegación y **flavors** (`mock`, `dev` y `prod`).
-
-## Capturas
-
-| Personajes | Búsqueda por nombre | Detalle |
+| Personajes | Búsqueda | Detalle |
 |---|---|---|
-| <img src="docs/screenshots/characters.png" width="240" alt="Cuadrícula de personajes"> | <img src="docs/screenshots/search.png" width="240" alt="Búsqueda de personajes por nombre"> | <img src="docs/screenshots/detail.png" width="240" alt="Detalle de un personaje"> |
+| <img src="docs/screenshots/characters.png" width="220" alt="Cuadrícula de personajes"> | <img src="docs/screenshots/search.png" width="220" alt="Búsqueda por nombre"> | <img src="docs/screenshots/detail.png" width="220" alt="Detalle de un personaje"> |
 
-Capturas del flavor `dev` (API real) en un iPhone 17 (simulador).
+## Cómo correrlo
 
-## Requisitos previos
+Requisitos: Flutter `3.47.x` (Dart `^3.13.4`), Xcode + CocoaPods para iOS o Android SDK para Android. No hace falta API key.
 
-| Herramienta | Versión |
+```bash
+flutter pub get
+flutter run --flavor dev
+```
+
+| Flavor | Datos |
 |---|---|
-| Flutter | `3.47.x` (canal stable; desarrollado con `3.47.7`) |
-| Dart SDK | `^3.13.4` (definido en `pubspec.yaml`) |
-| Xcode + CocoaPods | Solo para correr en iOS |
-| Android Studio / Android SDK | Solo para correr en Android |
+| `mock` | Personajes en memoria (`CharacterRepositoryMock`), sin red. |
+| `dev` | API real. |
+| `prod` | API real (es el que se usa si no se pasa `--flavor`). |
 
-Verificar el entorno con:
+Tests: `flutter test`.
 
-```bash
-flutter doctor
-```
+## API
 
-No se necesita ningún API key ni archivo `.env`.
+Base: `https://rickandmortyapi.com/api`
 
-## Cómo ejecutarlo
-
-1. Clonar el repositorio:
-
-   ```bash
-   git clone https://github.com/marlonc98/pragma_road_2.git
-   cd pragma_road_2
-   ```
-
-2. Instalar dependencias (como `pubspec.lock` no se versiona, este paso resuelve las versiones según los rangos de `pubspec.yaml`):
-
-   ```bash
-   flutter pub get
-   ```
-
-3. Correr la app con un flavor:
-
-   ```bash
-   flutter run --flavor mock
-   ```
-
-   En VS Code también se puede elegir el flavor desde **Run and Debug**: [.vscode/launch.json](.vscode/launch.json) tiene una configuración por flavor.
-
-### Flavors
-
-| Flavor | Nombre de la app | Notas |
+| Uso | Endpoint | Notas |
 |---|---|---|
-| `mock` | [MOCK] Portal Remoto | Personajes en memoria (`CharacterRepositoryMock`), sin llamar a la API. |
-| `dev` | [DEV] Portal Remoto | API real. |
-| `prod` | Portal Remoto | API real. |
+| Listado y búsqueda | `GET /character?page={n}&name={texto}` | `name` solo se envía si hay texto. `info.pages` indica la última página. Un `404` significa "sin resultados" y se muestra como lista vacía. |
+| Detalle | `GET /character/{id}` | Un `404` se muestra como "No se encontró el personaje". Si el personaje ya llegó en el listado, se toma de la caché en memoria sin otra petición. |
+| Imágenes | `image` de cada personaje (`/character/avatar/{id}.jpeg`) | Se cargan con `Image.network`. |
 
-Cada flavor tiene su propio `applicationId` / `bundleId` (`.mock`, `.dev`), así que los tres se pueden instalar a la vez. Si se corre sin `--flavor`, la app usa `prod`. El repositorio de cada flavor se elige en [dependency_injection.dart](lib/dependency_injection.dart) con un `switch (F.appFlavor)`.
+Errores de red: un `TimeoutException` (30 s) se muestra como "La solicitud tardó demasiado"; un `SocketException` o `ClientException` como "Sin conexión a internet".
 
-## Cómo contribuir
-
-Los commits siguen [Conventional Commits](https://www.conventionalcommits.org/) en inglés (`feat(auth): ...`, `fix(splash): ...`). Antes de abrir un PR:
-
-```bash
-dart format lib test
-flutter analyze
-flutter test
-```
-
-## Estructura de carpetas y arquitectura
-
-El código en `lib/` está organizado en tres capas, siguiendo la regla de dependencia de Clean Architecture: `domain` no conoce a `data` ni a `presentation`; las otras dos capas dependen de `domain`, nunca al revés.
-
-```mermaid
-flowchart TB
-    subgraph Presentation["presentation"]
-        direction TB
-        Page["Page<br/>(StatefulWidget)"]
-        VM["ViewModel<br/>(ChangeNotifier)"]
-        Screen["Screen<br/>(Widget)"]
-        Page --> VM --> Screen
-    end
-
-    subgraph Domain["domain — no depende de ninguna otra capa"]
-        direction TB
-        UseCase["UseCases<br/>Load, SearchCharacters, GetCharacterById"]
-        RepoI["LocalizationRepository, CharacterRepository<br/>(interfaces abstractas)"]
-        Entities["Entities y core<br/>CharacterEntity, AsyncState&lt;T&gt;, SearchResult&lt;T&gt;"]
-        UseCase --> RepoI
-        UseCase -.->|usa| Entities
-    end
-
-    subgraph Data["data"]
-        direction TB
-        RepoImpl["LocalizationRepositoryImpl<br/>CharacterRepositoryImpl / Mock"]
-        Sources["rickandmortyapi.com (http)<br/>shared_preferences<br/>assets/translate_dictionaries/*.json"]
-        RepoImpl --> Sources
-    end
-
-    VM -->|llama a| UseCase
-    RepoImpl -.->|implementa| RepoI
-
-    DI["dependency_injection.dart<br/>(Providers de Riverpod + flavor)"] -.->|registra| RepoImpl
-    DI -.->|inyecta en| UseCase
-```
+## Estructura
 
 ```
 lib/
-├── domain/              # Reglas de negocio puras, sin Flutter ni detalles de almacenamiento
-│   ├── core/             # Tipos genéricos: AsyncState<T> y SearchResult<T>
-│   ├── entities/         # CharacterEntity
-│   ├── repositories/     # Contratos abstractos (LocalizationRepository, CharacterRepository)
-│   ├── use_cases/        # Una operación de negocio por clase (load, character/search, character/get_by_id)
-│   ├── states/           # Contrato de estado global (LocalizationState)
-│   └── constants/        # Claves de error compartidas (ErrorsConstants)
-│
-├── data/                # Implementaciones concretas de los contratos de domain
-│   ├── settings/         # RestApi (cliente http + manejo de errores) y RickAndMortyApi
-│   ├── dtos/             # CharacterDto: JSON de la API -> CharacterEntity
-│   └── repositories/
-│       ├── character/     # CharacterRepositoryImpl (API), CharacterRepositoryMock + api/
-│       └── localization/  # LocalizationRepositoryImpl + api/
-│
-├── presentation/        # UI + estado de UI
-│   ├── pages/            # Cada pantalla: Page + Screen + ViewModel (+ widgets/ propios)
-│   │   ├── splash/            # Carga traducciones y versión, luego va al listado
-│   │   ├── characters/        # Cuadrícula paginada con búsqueda (+ widgets/character_card_widget.dart)
-│   │   └── character_detail/  # Detalle de un personaje por id (+ widgets/character_info_row_widget.dart)
-│   │       └── core/          # ViewModel base y StfViewModelAdapter (los usan todas las páginas)
-│   ├── widgets/          # Reutilizables: buttons/, images/, inputs/, lists/ y loaders_status/
-│   ├── states/           # Implementación Riverpod de LocalizationState
-│   ├── utils/            # FunctionsHelper (debounce) y textos/colores de estado y género
-│   ├── theme/            # AppTheme (claro y oscuro): colores de fondo, AppBar, tarjetas y buscador
-│   ├── constants/        # TextConstants (claves de traducción)
-│   ├── router.dart       # Rutas con go_router
-│   └── app.dart          # MaterialApp.router
-│
-├── flavors/flavors.dart       # Flavor actual y nombre de la app por flavor
-├── dependency_injection.dart  # Todos los Providers (repositorios, estados y casos de uso)
-└── main.dart                  # Punto de entrada: lee el flavor y envuelve la app en UncontrolledProviderScope(container: di)
-
-assets/translate_dictionaries/  # Traducciones (es.json)
-test/                           # Tests
+├── domain/        # Entidades, contratos de repositorio, casos de uso y claves de error
+├── data/          # RestApi (http), DTO y repositorios (API real y mock)
+├── presentation/  # Páginas (Page + Screen + ViewModel), widgets, tema y textos
+├── dependency_injection.dart  # Providers de Riverpod
+└── main.dart
 ```
 
-### Capas
+`domain` no depende de las otras capas. Los repositorios reciben el `RestApi` por constructor y los providers se arman con `ref.watch`, así que en un test se pueden sobrescribir con `ProviderScope(overrides: [...])`. Los textos están en `assets/translate_dictionaries/es.json`.
 
-- **domain**: define *qué* hace la app. Los casos de uso aplican las reglas de negocio sin saber de dónde vienen los datos.
-- **data**: define *cómo* se obtienen y guardan los datos. Las funciones de `api/` hacen la petición con `di.read(rickAndMortyApiProvider)` y lanzan claves de `ErrorsConstants`; el repositorio las envuelve en `AsyncState`. Cambiar la fuente (API, mock) solo requiere otra implementación del repositorio y cambiar su Provider.
-- **presentation**: dibuja la UI y reacciona a los cambios. Los `ViewModel` llaman casos de uso a través de los Providers, nunca a los repositorios directamente.
+## Dependencias
 
-### Inyección de dependencias con Riverpod
+| Paquete | Por qué |
+|---|---|
+| `flutter_riverpod` | Inyección de dependencias y `AsyncValue` para los estados de carga, error y datos. |
+| `http` | Peticiones a la API; en los tests se cambia el cliente con `MockClient`. |
+| `go_router` | Rutas declarativas con parámetros (`/characters/:id`). Con `Navigator` habría que parsear la ruta y armar el `MaterialPageRoute` a mano, y deja la app lista para deep links. |
+| `flutter_flavorizr` (dev) | Generó la configuración de los flavors en Android e iOS (ids, nombres, esquemas de Xcode). Es de desarrollo, no llega a la app, y se mantiene para regenerar esa configuración si cambia un flavor. |
 
-[dependency_injection.dart](lib/dependency_injection.dart) declara todos los `Provider`/`NotifierProvider`, agrupados en APIs, repositorios, estados y casos de uso. También expone `di`, un `ProviderContainer` global que la app comparte con `UncontrolledProviderScope` en `main.dart`: los widgets y ViewModels leen con `ref`, y el código sin `ref` (las funciones de `data/.../api/`) lee el mismo contenedor con `di.read(...)`, así que todos usan las mismas instancias. `characterRepositoryProvider` elige la implementación según el flavor: `CharacterRepositoryMock` en `mock` y `CharacterRepositoryImpl` (API real) en `dev` y `prod`.
+## Limitaciones
 
-### Patrón de cada pantalla (Page / Screen / ViewModel)
+- Solo Android e iOS, y solo en español. Los datos de la API (especie, tipo, lugares) vienen en inglés y se muestran tal cual.
+- La caché de personajes es en memoria: se pierde al cerrar la app y no sirve sin conexión.
+- La API limita las peticiones (Cloudflare responde `error code: 1015`); si pasa, se muestra "No pudimos cargar los personajes" con el botón de reintentar.
 
-- **`*_page.dart`**: `StatefulWidget` con su `route` estática; solo crea el `ViewModel` vía [StfViewModelAdapter](lib/presentation/pages/character_detail/core/stf_view_model_adapter.dart).
-- **`*_page_view_model.dart`**: extiende [ViewModel<T>](lib/presentation/pages/character_detail/core/view_model.dart) (un `ChangeNotifier` con acceso a `context` y `WidgetRef`), llama a los casos de uso y expone el estado a la UI.
-- **`*_page_screen.dart`**: widget que recibe el `ViewModel` y solo dibuja UI.
-
-### Manejo de resultados asíncronos: `AsyncState<T>`
-
-Los repositorios devuelven [AsyncState<T>](lib/domain/core/async_state.dart): un wrapper con `status` (`notStarted` / `loading` / `complete` / `failed`), `data` y `error`. Los errores se muestran traducidos a partir de las claves de [ErrorsConstants](lib/domain/constants/errors_constants.dart).
-
-### Widgets de estado de carga
-
-[LoaderScreenWidget<T>](lib/presentation/widgets/loaders_status/loader_screen_widget.dart) recibe un `AsyncState<T>` y decide qué dibujar:
-
-- `loading` → `LoadingWidget`.
-- `complete` sin datos (lista, mapa o [SearchResult](lib/domain/core/search_result.dart) vacíos) y `noResultsScreen: true` → `NoResultsWidget` o `NoResultsSmallWidget` (con `noResultsSmall: true`), o un `customNoResults`.
-- `failed`, o sin datos cuando `allowNull` es `false` → `ErrorLoadingWidget` con el error traducido y el botón de reintentar.
-- `complete` con datos → llama a `builder(context, data)`.
-
-`fullSize` controla cómo se centra el estado (`inContainer`, `inExpanded` o `notFullSize`).
-
-### Caché y conexión
-
-- **Personajes**: `CharacterRepositoryImpl` guarda en memoria cada personaje que llega en una búsqueda o en un detalle. Abrir el detalle desde la lista no hace otra petición.
-- **Imágenes**: `ImageNetworkWithLoadWidget` con `useCache: true` usa `CachedNetworkImageProvider`, que las guarda en disco.
-- **Timeout**: si una petición tarda más de 30 s, `RestApi.hasInternetConnection()` revisa la conexión con `connectivity_plus` para mostrar "Sin conexión a internet" o "La solicitud tardó demasiado".
-
-### Tests
-
-```bash
-flutter test
-```
-
-Cubren el `CharacterDto`, el `CharacterRepositoryImpl` contra un `MockClient` de `http` (parámetros `page` y `name`, 404 como lista vacía o `characterNotFound`, errores de red y caché), el timeout de `RestApi` con y sin conexión, y los casos de uso sobre el repositorio mock.
-
-### Imágenes
-
-[ImageNetworkWithLoadWidget](lib/presentation/widgets/images/image_network_with_load_widget.dart) carga una imagen desde una URL (`http`/`https`), un asset (`assets/`) o un archivo local. Muestra un indicador mientras carga y, si falla, una imagen por defecto (`defaultImage`) o un placeholder; con `notShowDefaultImage: true` no muestra nada.
-
-### Internacionalización
-
-> **Hoy la app está solo en español (`es`).**
-
-Los textos visibles usan claves de [TextConstants](lib/presentation/constants/text_constants.dart), y las traducciones viven en `assets/translate_dictionaries/<locale>.json`. Al agregar un texto nuevo, la clave debe ir en `TextConstants` y en **cada** JSON de idioma.
-
-## Paquetes principales
-
-| Paquete | Para qué se usa | Por qué está |
-|---|---|---|
-| `flutter_riverpod` / `riverpod` | Estado global e inyección de dependencias | Es el mecanismo central de la arquitectura: repositorios, estados y casos de uso se declaran como Providers. |
-| `go_router` | Navegación | Rutas declarativas (`context.go` / `context.push`); el detalle usa la ruta `/characters/:id`. |
-| `http` | Peticiones a la API | Lo usa `RestApi`. `RickAndMortyApi` (un `RestApi`) se registra en `rickAndMortyApiProvider` y las funciones de `api/` lo leen con `di.read(rickAndMortyApiProvider)`. En los tests se cambia el cliente con `http.runWithClient` + `MockClient`. |
-| `cached_network_image` | Caché de imágenes en disco | Evita volver a descargar las imágenes de los personajes. |
-| `connectivity_plus` | Saber si hay red | Ante un timeout, distingue "sin internet" de "tardó demasiado". |
-| `infinite_scroll_pagination` | Scroll infinito del listado | `PagingController` + `PagedGridView` piden la siguiente página hasta llegar a `info.pages`. |
-| `shared_preferences` | Persistencia local de clave-valor | La usa la localización para el idioma guardado. |
-| `package_info_plus` | Leer la versión y el número de build | Se muestran en el splash (`Versión {version} ({build})`). |
-| `flutter_flavorizr` (dev) | Generar los flavors `mock`, `dev` y `prod` | Configura Android e iOS (ids, nombres, esquemas de Xcode) desde `pubspec.yaml`. Está configurado para no tocar `main.dart`, `app.dart` ni los íconos; en iOS cada flavor usa su propio icon set (`AppIcon-mock`, `AppIcon-dev`, `AppIcon-prod` en `Assets.xcassets`), por ahora copias de `AppIcon`. |
-| `flutter_test`, `flutter_lints` (dev) | Tests y reglas de análisis estático | |
-
-## Archivos que no se versionan
-
-El [.gitignore](.gitignore) excluye todo lo que es local a la máquina o sensible:
-
-- **Generados / locales**: `build/`, `.dart_tool/`, `.idea/`, `*.iml`, `.metadata`, `pubspec.lock`, `Podfile.lock`, `Pods/`, `xcuserdata/`, `local.properties`, `.vscode/settings.json`.
-- **Credenciales**: `.env` / `.env.*` (se permite `.env.example`), `key.properties`, keystores (`*.jks`, `*.keystore`), certificados y perfiles de iOS (`*.p12`, `*.p8`, `*.mobileprovision`), `google-services.json` y `GoogleService-Info.plist`.
-
-## Limitaciones conocidas / próximos pasos
-
-- La app está solo en español (`es`); los valores que vienen de la API (especie, tipo, lugares) se muestran tal cual, en inglés.
-- La caché de personajes es solo en memoria: se pierde al cerrar la app y no permite usarla sin conexión.
-- `connectivity_plus` sabe si hay red, no si esa red tiene salida a internet; con un wifi sin internet se muestra "tardó demasiado".
+Cambios: [CHANGELOG.md](CHANGELOG.md).
