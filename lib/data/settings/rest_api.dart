@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:portal_remoto/domain/constants/errors_constants.dart';
 
@@ -32,22 +31,11 @@ class RestApi {
           ? 'HTTP ${response.statusCode}'
           : response.body;
     } on TimeoutException catch (_) {
-      throw await hasInternetConnection()
-          ? ErrorsConstants.timeout
-          : ErrorsConstants.noInternet;
+      throw ErrorsConstants.timeout;
     } on SocketException catch (_) {
       throw ErrorsConstants.noInternet;
     } on http.ClientException catch (_) {
       throw ErrorsConstants.noInternet;
-    }
-  }
-
-  Future<bool> hasInternetConnection() async {
-    try {
-      final results = await Connectivity().checkConnectivity();
-      return !results.contains(ConnectivityResult.none);
-    } catch (_) {
-      return true;
     }
   }
 }

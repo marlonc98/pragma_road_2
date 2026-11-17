@@ -1,49 +1,46 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:portal_remoto/data/settings/rest_api.dart';
 import 'package:portal_remoto/domain/constants/errors_constants.dart';
 
-class _FakeConnectionApi extends RestApi {
-  final bool connected;
-
-  _FakeConnectionApi({required this.connected})
-    : super(
-        hostUrl: 'https://example.test',
-        timeout: const Duration(milliseconds: 20),
-      );
-
-  @override
-  Future<bool> hasInternetConnection() async => connected;
-}
-
-Future<Object?> errorOf(RestApi api) => http.runWithClient(
-  () async {
-    try {
-      await api.get('/slow');
-      return null;
-    } catch (error) {
-      return error;
-    }
-  },
-  () => MockClient((_) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return http.Response('{}', 200);
-  }),
+final api = RestApi(
+  hostUrl: 'https://example.test',
+  timeout: const Duration(milliseconds: 20),
 );
 
+Future<Object?> errorOf(Future<http.Response> Function() respond) =>
+    http.runWithClient(() async {
+      try {
+        await api.get('/character');
+        return null;
+      } catch (error) {
+        return error;
+      }
+    }, () => MockClient((_) => respond()));
+
 void main() {
-  test('si se vence el tiempo y hay conexión, es timeout', () async {
-    expect(
-      await errorOf(_FakeConnectionApi(connected: true)),
-      ErrorsConstants.timeout,
-    );
+  test('si se vence el tiempo es timeout', () async {
+    final error = await errorOf(() async {
+      await Future.delayed(const Duration(milliseconds: 200));
+      return http.Response('{}', 200);
+    });
+    expect(error, ErrorsConstants.timeout);
   });
 
-  test('si se vence el tiempo y no hay conexión, es noInternet', () async {
-    expect(
-      await errorOf(_FakeConnectionApi(connected: false)),
-      ErrorsConstants.noInternet,
+  test('si no se puede abrir la conexión es noInternet', () async {
+    final error = await errorOf(
+      () => throw const SocketException('Failed host lookup'),
     );
+    expect(error, ErrorsConstants.noInternet);
+  });
+
+  test('si el cliente http falla es noInternet', () async {
+    final error = await errorOf(
+      () => throw http.ClientException('Connection closed'),
+    );
+    expect(error, ErrorsConstants.noInternet);
   });
 }
