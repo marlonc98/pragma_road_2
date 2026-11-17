@@ -100,7 +100,6 @@ class CharacterDetailPageScreen extends ConsumerWidget {
               character.image,
               height: height,
               width: double.infinity,
-              useCache: true,
             ),
           ),
           DecoratedBox(

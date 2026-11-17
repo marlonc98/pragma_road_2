@@ -34,7 +34,6 @@ class CharacterCardWidget extends ConsumerWidget {
                 character.image,
                 height: imageHeight,
                 width: double.infinity,
-                useCache: true,
               ),
             ),
             Padding(
