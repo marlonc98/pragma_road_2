@@ -1,5 +1,9 @@
+import 'package:remote_data_kit/remote_data_kit.dart';
+
+/// Claves de traducción de los errores que muestra la app.
 class ErrorsConstants {
   static const String unauthorized = 'unauthorized';
+  static const String invalidResponse = 'invalidResponse';
   static const String unknownError = "unknownError";
   static const String noInternet = "noInternet";
   static const String timeout = "timeout";
@@ -11,17 +15,13 @@ class ErrorsConstants {
   static const String errorGettingCharacter = "errorGettingCharacter";
   static const String characterNotFound = "characterNotFound";
 
-  static bool existsKey(String key) {
-    return [
-      unauthorized,
-      unknownError,
-      noInternet,
-      timeout,
-      notFound,
-      noUserFound,
-      errorGettingCharacters,
-      errorGettingCharacter,
-      characterNotFound,
-    ].contains(key);
-  }
+  /// Clave de traducción por defecto para cada error de `remote_data_kit`.
+  static String fromAsyncStateError(AsyncStateError error) => switch (error) {
+    AsyncStateError.unauthorized => unauthorized,
+    AsyncStateError.noInternet => noInternet,
+    AsyncStateError.timeout => timeout,
+    AsyncStateError.notFound => notFound,
+    AsyncStateError.invalidResponse => invalidResponse,
+    AsyncStateError.unknown => unknownError,
+  };
 }

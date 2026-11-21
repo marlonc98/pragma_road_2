@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:portal_remoto/dependency_injection.dart';
-import 'package:portal_remoto/domain/entities/character_entity.dart';
+import 'package:remote_data_kit/remote_data_kit.dart';
 import 'package:portal_remoto/presentation/constants/text_constants.dart';
 import 'package:portal_remoto/presentation/utils/character_labels.dart';
 import 'package:portal_remoto/presentation/widgets/images/image_network_with_load_widget.dart';

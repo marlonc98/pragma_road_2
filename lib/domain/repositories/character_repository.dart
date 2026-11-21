@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:portal_remoto/domain/core/search_result.dart';
-import 'package:portal_remoto/domain/entities/character_entity.dart';
+import 'package:remote_data_kit/remote_data_kit.dart' hide CharacterRepository;
 
 /// Los métodos no lanzan: si fallan devuelven [AsyncError] con una clave de
 /// [ErrorsConstants].

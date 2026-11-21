@@ -28,6 +28,7 @@
   "characterGenderGenderless": "Sin género",
   "characterGenderUnknown": "Desconocido",
   "unauthorized": "No autorizado",
+  "invalidResponse": "El servidor respondió algo inesperado",
   "unknownError": "Ocurrió un error inesperado",
   "noInternet": "Sin conexión a internet",
   "timeout": "La solicitud tardó demasiado",

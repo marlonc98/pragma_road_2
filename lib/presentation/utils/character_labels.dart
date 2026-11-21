@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:portal_remoto/domain/entities/character_entity.dart';
+import 'package:remote_data_kit/remote_data_kit.dart';
 import 'package:portal_remoto/presentation/constants/text_constants.dart';
 
 extension CharacterStatusLabel on CharacterStatus {

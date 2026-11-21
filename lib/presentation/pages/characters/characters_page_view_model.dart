@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:portal_remoto/dependency_injection.dart';
-import 'package:portal_remoto/domain/entities/character_entity.dart';
+import 'package:remote_data_kit/remote_data_kit.dart';
 import 'package:portal_remoto/presentation/pages/character_detail/character_detail_page.dart';
 import 'package:portal_remoto/presentation/pages/character_detail/core/view_model.dart';
 import 'package:portal_remoto/presentation/pages/characters/characters_page.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:portal_remoto/domain/entities/character_entity.dart';
 import 'package:portal_remoto/domain/repositories/character_repository.dart';
+import 'package:remote_data_kit/remote_data_kit.dart' hide CharacterRepository;
 
 class GetCharacterByIdUseCase {
   final CharacterRepository characterRepository;
